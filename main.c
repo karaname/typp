@@ -69,12 +69,60 @@ void help_info()
   }
 }
 
+void input_text(char *ptext, WINDOW *ptext_win)
+{
+  int xcount = 1;
+  int ycount = 1;
+  int cuser;
+
+  while (*ptext != '\0') {
+    switch (cuser = wgetch(ptext_win)) {
+      case KEY_F(10):
+        endwin();
+        exit(0);
+      case KEY_F(3):
+        longjmp(rbuf, 4);
+      default:
+        if (cuser == *ptext) {
+          xcount++;
+          if (cuser == 10) {
+            xcount = 1;
+            ycount++;
+          } else {
+            wattron(ptext_win, COLOR_PAIR(3) | A_UNDERLINE | A_BOLD);
+            mvwaddch(ptext_win, ycount, xcount, cuser);
+            wattroff(ptext_win, COLOR_PAIR(3) | A_UNDERLINE | A_BOLD);
+          }
+          ptext++;
+        } else {
+          if (*ptext == 10) {
+            ptext++;
+            xcount = 1;
+            ycount++;
+          }
+          wattron(ptext_win, COLOR_PAIR(4) | A_UNDERLINE | A_BOLD);
+          mvwaddch(ptext_win, ycount, xcount + 1, *ptext);
+          wattroff(ptext_win, COLOR_PAIR(4) | A_UNDERLINE | A_BOLD);
+        }
+    }
+  }
+
+  // if text done - cancel
+  wrefresh(ptext_win);
+  mvprintw(0, 0, "Done!");
+  refresh();
+  sleep(2);
+  longjmp(rbuf, 4);
+}
+
 void get_text()
 {
   char *main_text;
-  //main_text = generate_text(langs[highlight]);
-  main_text = "Hello world!\n\
-Hello";
+  main_text = generate_text(langs[highlight]);
+
+  int index, newl = 0;
+  int len = strlen(main_text);
+  char *arr = malloc(len);
 
   while (1) {
     if (sigsetjmp(scr_buf, 5)) {
@@ -85,14 +133,10 @@ Hello";
     term_size_check();
     refresh();
 
-    int i;
-    int newl = 0;
-    int len = strlen(main_text);
-    char arr[len];
-    for (i = 0; main_text[i] != '\0'; i++) {
-      arr[i] = main_text[i];
+    for (index = 0; main_text[index] != '\0'; index++) {
+      arr[index] = main_text[index];
     }
-    arr[i] = '\0';
+    arr[index] = '\0';
 
     // print funny message with colors
     char *funny_msg = "Let's start typing ... (｡◕‿‿◕｡)";
@@ -119,33 +163,8 @@ Hello";
     wrefresh(text_win);
     refresh();
 
-    int j = 0;
-    int ccount = 1;
-    while (arr[j] != '\0') {
-      int cuser;
-      switch (cuser = wgetch(text_win)) {
-        case KEY_F(10):
-          endwin();
-          exit(0);
-        case KEY_F(3):
-          longjmp(rbuf, 4);
-        default:
-          if (cuser == arr[j]) {
-            j++;
-            ccount++;
-            wattron(text_win, COLOR_PAIR(3) | A_UNDERLINE);
-            mvwaddch(text_win, 1, ccount, cuser);
-            wattroff(text_win, COLOR_PAIR(3) | A_UNDERLINE);
-          } else {
-            wattron(text_win, COLOR_PAIR(4) | A_UNDERLINE);
-            mvwaddch(text_win, 1, ccount + 1, arr[j]);
-            wattroff(text_win, COLOR_PAIR(4) | A_UNDERLINE);
-          }
-          //ccount++;
-          //mvwaddch(text_win, 1, ccount, cuser);
-          //wrefresh(text_win);
-      }
-    }
+    // let's start user input
+    input_text(main_text, text_win);
   }
 }
 
@@ -159,15 +178,15 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  noecho();
-  curs_set(0);
-  keypad(stdscr, TRUE);
-
   // return
   if (setjmp(rbuf), 4) {
     endwin();
     clear();
   }
+
+  noecho();
+  curs_set(0);
+  keypad(stdscr, TRUE);
 
   while (1) {
     if (sigsetjmp(scr_buf, 5)) {

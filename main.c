@@ -18,13 +18,13 @@ char *quit_msg = "F10 Quit";
 static jmp_buf rbuf;
 static sigjmp_buf scr_buf;
 
-// signal handler
+/* signal handler */
 void sigwinch_handler(int sig)
 {
   siglongjmp(scr_buf, 5);
 }
 
-// check 80x24 terminal size
+/* check 80x24 terminal size */
 void term_size_check()
 {
   if (LINES < 24 || COLS < 80) {
@@ -46,16 +46,16 @@ void help_info()
     term_size_check();
     refresh();
 
-    // create help window
+    /* create help window */
     WINDOW *help_win = newwin(22, 80, (LINES - 24) / 2, (COLS - 80) / 2);
     box(help_win, 0, 0);
 
-    // include some info text
+    /* include some info text */
     mvwaddstr(help_win, 2, 2, "1. Help info -");
     mvwaddstr(help_win, 3, 2, "2. Help info -");
     wrefresh(help_win);
 
-    // print cancel / quit messages
+    /* print cancel / quit messages */
     mvprintw(LINES - 2, 4, "%s", "F3 Cancel");
     mvprintw(LINES - 2, (COLS - strlen(quit_msg)) - 4, "%s", quit_msg);
 
@@ -77,24 +77,26 @@ void get_result(int err)
       clear();
     }
 
+    term_size_check();
     refresh();
-    // init result window
+
+    /* init result window */
     WINDOW *result_win = newwin(20, 20, 1, 1);
     box(result_win, 0, 0);
 
-    // title string with colors
+    /* title string with colors */
     wattron(result_win, COLOR_PAIR(2));
     mvwaddstr(result_win, 2, (20 - strlen("Result")) / 2, "Result");
     wattroff(result_win, COLOR_PAIR(2));
 
-    // print result info
+    /* print result info */
     char error_buf[20];
     sprintf(error_buf, "Error count: %d", err);
     mvwaddstr(result_win, 5, 2, error_buf);
     wrefresh(result_win);
     mvprintw(22, 2, "Press F3 to cancel");
 
-    // != F11
+    /* 410 (F11) */
     choice = getch();
     if (choice != 410 && choice == KEY_F(3)) {
       clear();
@@ -110,25 +112,30 @@ void input_text(char *ptext, WINDOW *ptext_win)
   int errcount = 0;
   int cuser;
 
+  /* set cursor normal station */
+  curs_set(1);
+
   while (*ptext != '\0') {
+    wmove(ptext_win, ycount, xcount + 1);
     switch (cuser = wgetch(ptext_win)) {
       case KEY_F(10):
         endwin();
         exit(0);
-      case KEY_F(3):
+      case KEY_F(3): /* cancel */
         longjmp(rbuf, 4);
       default:
         if (cuser == *ptext) {
           xcount++;
           if (cuser == 10) {
-            xcount = 1;
-            ycount++;
+            xcount = 1; /* back to first */
+            ycount++;   /* go to the next line */
           } else {
             wattron(ptext_win, COLOR_PAIR(3) | A_UNDERLINE | A_BOLD);
             mvwaddch(ptext_win, ycount, xcount, cuser);
             wattroff(ptext_win, COLOR_PAIR(3) | A_UNDERLINE | A_BOLD);
           }
           ptext++;
+          wmove(ptext_win, ycount, xcount + 1);
         } else {
           if (*ptext == 10) {
             ptext++;
@@ -147,6 +154,7 @@ void input_text(char *ptext, WINDOW *ptext_win)
   wrefresh(ptext_win);
   sleep(1);
   clear();
+  curs_set(0);
   get_result(errcount);
 }
 
@@ -165,29 +173,30 @@ void get_text()
     term_size_check();
     refresh();
 
+    /* create arr */
     int index, newl = 0;
     for (index = 0; main_text[index] != '\0'; index++) {
       arr[index] = main_text[index];
     }
     arr[index] = '\0';
 
-    // print funny message with colors
-    char *funny_msg = "Let's start typing ... (｡◕‿‿◕｡)";
+    /* print funny message with colors */
+    char *funny_msg = "Let's start typing ...";
     attron(COLOR_PAIR(1));
-    mvprintw((LINES - 24) / 2, (COLS - strlen(funny_msg) + 9) / 2, "%s", funny_msg);
+    mvprintw((LINES - 24) / 2, (COLS - strlen(funny_msg)) / 2, "%s", funny_msg);
     attroff(COLOR_PAIR(1));
 
-    // init text window
+    /* init text window */
     WINDOW *text_win = newwin(20, 80, (LINES - 21) / 2, (COLS - 80) / 2);
     box(text_win, 0, 0);
     keypad(text_win, TRUE);
 
-    // print cancel / quit messages
+    /* print cancel / quit messages */
     mvprintw(LINES - 2, 4, "%s", "F3 Cancel");
     mvprintw(LINES - 2, (COLS - strlen(quit_msg)) - 4, "%s", quit_msg);
     refresh();
 
-    // print text (extract token text before new line)
+    /* print text (extract token text before new line) */
     char* token = strtok(arr, "\n");
     while (token != NULL) {
       newl++;
@@ -196,7 +205,7 @@ void get_text()
     }
     wrefresh(text_win);
 
-    // let's start user input
+    /* let's start user input */
     input_text(main_text, text_win);
     break;
   }
@@ -212,7 +221,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  // return
+  // cancel
   if (setjmp(rbuf), 4) {
     endwin();
     clear();
@@ -259,11 +268,11 @@ int main(int argc, char *argv[])
     mvprintw(LINES - 2, 4, "%s", "F1 Help");
     mvprintw(LINES - 2, (COLS - strlen(quit_msg)) - 4, "%s", quit_msg);
 
+    /* print langs in stdscr */
     for (int index = 0; index < 2; index++) {
       if (index == highlight) {
         attron(A_UNDERLINE | A_BOLD);
       }
-
       mvprintw(index + 9, (COLS - strlen(langs[index])) / 2, "%s", langs[index]);
       attroff(A_UNDERLINE | A_BOLD);
     }
@@ -286,7 +295,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    if (choice == 10) { // Enter
+    if (choice == 10) { // enter
       clear();
       get_text();
       continue;

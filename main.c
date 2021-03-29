@@ -141,6 +141,9 @@ void input_text(char *ptext, WINDOW *ptext_win)
             ptext++;
             xcount = 1;
             ycount++;
+            if (cuser == 32) {
+              continue;
+            }
           }
 
           errcount++;

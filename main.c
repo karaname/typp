@@ -10,8 +10,7 @@
 #define _name "typp"
 
 wchar_t *generate_text(char *type_lang);
-
-char *langs[] = {"Russion", "English"};
+char *langs[] = {"Русский", "English"};
 int choice, highlight = 0;
 char *quit_msg = "F10 Quit";
 
@@ -278,7 +277,7 @@ int main(int argc, char *argv[])
       if (index == highlight) {
         attron(A_UNDERLINE | A_BOLD);
       }
-      mvprintw(index + 9, (COLS - strlen(langs[index])) / 2, "%s", langs[index]);
+      mvprintw(index + 9, (COLS - 7) / 2, "%s", langs[index]);
       attroff(A_UNDERLINE | A_BOLD);
     }
 

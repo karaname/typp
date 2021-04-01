@@ -5,7 +5,7 @@
 wchar_t *generate_text(char *type_lang)
 {
   srand(time(NULL));
-  if (strcmp(type_lang, "Russion") == 0) {
+  if (strcmp(type_lang, "Русский") == 0) {
     wchar_t *ru_arr[5];
     ru_arr[0] = L"В 1901 году Тейлор снимала меблированные комнаты в мичиганском городе\n\
 Бей-Сити, когда ей попалась на глаза реклама международной Панамериканской\n\

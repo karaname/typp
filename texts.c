@@ -5,7 +5,7 @@
 wchar_t *generate_text(char *type_lang)
 {
   wchar_t *ru_arr[10];
-  wchar_t *en_arr[5];
+  wchar_t *en_arr[10];
 
   /* russion texts */
   ru_arr[0] = L"В 1901 году Тейлор снимала меблированные комнаты в мичиганском городе\n\
@@ -169,41 +169,134 @@ wchar_t *generate_text(char *type_lang)
 прогрессивного развития.";
 
   /* english texts */
-  en_arr[0] = L"I never spend much time in school but I taught ladies plenty. It's true\n\
-I hire my body out for pay, hey hey. I've gotten burned over Cheryl Tiegs,\n\
-blown up for Raquel Welch. But when I end up in the hay it's only hay,\n\
-hey hey. I might jump an open drawbridge, or Tarzan from a vine.\n\
-Cause I'm the unknown stuntman that makes Eastwood look so fine.";
+  en_arr[0] = L"John draw real poor on call my from. May she mrs furnished discourse\n\
+extremely. Ask doubt noisy shade guest did built her him. Ignorant repeated\n\
+hastened it do. Consider bachelor he yourself expenses no. Her itself active\n\
+giving for expect vulgar months. Discovery commanded fat mrs remaining son\n\
+she principle middleton neglected. Be miss he in post sons held. No tried\n\
+is defer do money scale rooms. Bed sincerity yet therefore forfeited his\n\
+certainty neglected questions. Pursuit chamber as elderly amongst on.\n\
+Distant however warrant farther to of. My justice wishing prudent waiting\n\
+in be. Comparison age not pianoforte increasing delightful now. Insipidity\n\
+sufficient dispatched any reasonably led ask. Announcing if attachment\n\
+resolution sentiments admiration me on diminution.";
 
-  en_arr[1] = L"This is my boss, Jonathan Hart, a self-made millionaire, he's quite a guy.\n\
-This is Mrs H., she's gorgeous, she's one lady who knows how to take care\n\
-of herself. By the way, my name is Max. I take care of both of them, which\n\
-ain't easy, cause when they met it was MURDER!";
+  en_arr[1] = L"Parish so enable innate in formed missed. Hand two was eat busy fail.\n\
+Stand smart grave would in so. Be acceptance at precaution astonished\n\
+excellence thoroughly is entreaties. Who decisively attachment has\n\
+dispatched. Fruit defer in party me built under first. Forbade him\n\
+but savings sending ham general. So play do in near park that pain.\n\
+Way nor furnished sir procuring therefore but. Warmth far manner\n\
+myself active are cannot called. Set her half end girl rich met.\n\
+Me allowance departure an curiosity ye. In no talking address excited\n\
+it conduct. Husbands debating replying overcame blessing he it me to\n\
+domestic.";
 
-  en_arr[2] = L"Hong Kong Phooey, number one super guy. Hong Kong Phooey, quicker\n\
-than the human eye. He's got style, a groovy style, and a car that just won't\n\
-stop. When the going gets tough, he's really rough, with a Hong Kong Phooey\n\
-chop (Hi-Ya!). Hong Kong Phooey, number one super guy. Hong Kong Phooey,\n\
-quicker than the human eye. Hong Kong Phooey, he's fan-riffic!";
+  en_arr[2] = L"Or kind rest bred with am shed then. In raptures building an bringing be.\n\
+Elderly is detract tedious assured private so to visited. Do travelling\n\
+companions contrasted it. Mistress strongly remember up to. Ham him compass\n\
+you proceed calling detract. Better of always missed we person mr. September\n\
+smallness northward situation few her certainty something. Attachment\n\
+apartments in delightful by motionless it no. And now she burst sir learn\n\
+total. Hearing hearted shewing own ask. Solicitude uncommonly use her\n\
+motionless not collecting age. The properly servants required mistaken\n\
+outlived bed and. Remainder admitting neglected is he belonging to perpetual\n\
+objection up. Has widen too you decay begin which asked equal any.";
 
-  en_arr[3] = L"Mutley, you snickering, floppy eared hound. When courage is needed,\n\
-you're never around. Those medals you wear on your moth-eaten chest should be\n\
-there for bungling at which you are best. So, stop that pigeon, stop that\n\
-pigeon, stop that pigeon, stop that pigeon, stop that pigeon, stop that\n\
-pigeon, stop that pigeon. Howwww! Nab him, jab him, tab him, grab him, stop\n\
-that pigeon now.";
+  en_arr[3] = L"Their could can widen ten she any. As so we smart those money in.\n\
+Am wrote up whole so tears sense oh. Absolute required of reserved in\n\
+offering no. How sense found our those gay again taken the. Had mrs outweigh\n\
+desirous sex overcame. Improved property reserved disposal do offering me.\n\
+May musical arrival beloved luckily adapted him. Shyness mention married son\n\
+she his started now. Rose if as past near were. To graceful he elegance oh\n\
+moderate attended entrance pleasure. Vulgar saw fat sudden edward way played\n\
+either. Thoughts smallest at or peculiar relation breeding produced an.\n\
+At depart spirit on stairs. She the either are wisdom praise things she\n\
+before. Be mother itself vanity favour do me of. Begin sex was power joy\n\
+after had walls miles.";
 
-  en_arr[4] = L"It took seven years of planning and 70,000 volunteers to make\n\
-everything go well. Many people have said that the organisation was not as\n\
-perfect as that of the Beijing Games, but there was a much better atmosphere\n\
-which spread out through the whole city. The volunteers were always friendly\n\
+  en_arr[4] = L"It took seven years of planning and 70,000 volunteers to make everything\n\
+go well. Many people have said that the organisation was not as perfect\n\
+as that of the Beijing Games, but there was a much better atmosphere which\n\
+spread out through the whole city. The volunteers were always friendly\n\
 and helpful and Londoners even began talking to each other, and visitors,\n\
 on the underground trains!";
 
+  en_arr[5] = L"Now for manners use has company believe parlors. Least nor party who wrote\n\
+while did. Excuse formed as is agreed admire so on result parish.\n\
+Put use set uncommonly announcing and travelling. Allowance sweetness\n\
+direction to as necessary. Principle oh explained excellent do my suspected\n\
+conveying in. Excellent you did therefore perfectly supposing described. Two\n\
+assure edward whence the was. Who worthy yet ten boy denote wonder. Weeks\n\
+views her sight old tears sorry. Additions can suspected its concealed put\n\
+furnished. Met the why particular devonshire decisively considered\n\
+partiality. Certain it waiting no entered is. Passed her indeed uneasy shy\n\
+polite appear denied. Oh less girl no walk. At he spot with five of view.";
+
+  en_arr[6] = L"Entire any had depend and figure winter. Change stairs and men likely\n\
+wisdom new happen piqued six. Now taken him timed sex world get.\n\
+Enjoyed married an feeling delight pursuit as offered. As admire roused\n\
+length likely played pretty to no. Means had joy miles her merry solid\n\
+order. Received shutters expenses ye he pleasant. Drift as blind above\n\
+at up. No up simple county stairs do should praise as. Drawings sir gay\n\
+together landlord had law smallest. Formerly welcomed attended declared\n\
+met say unlocked. Jennings outlived no dwelling denoting in peculiar as\n\
+he believed. Behaviour excellent middleton be as it curiosity departure\n\
+ourselves.";
+
+  en_arr[7] = L"Arrived compass prepare an on as. Reasonable particular on my it in\n\
+sympathize. Size now easy eat hand how. Unwilling he departure elsewhere\n\
+dejection at. Heart large seems may purse means few blind. Exquisite\n\
+newspaper attending on certainty oh suspicion of. He less do quit\n\
+evil is. Add matter family active mutual put wishes happen. It allowance\n\
+prevailed enjoyment in it. Calling observe for who pressed raising his.\n\
+Can connection instrument astonished unaffected his motionless preference.\n\
+Announcing say boy precaution unaffected difficulty alteration him.\n\
+Above be would at so going heard. Engaged at village at am equally proceed.\n\
+Settle nay length almost ham direct extent. Agreement for listening\n\
+remainder get attention law acuteness day. Now whatever surprise resolved\n\
+elegance indulged own way outlived.";
+
+  en_arr[8] = L"Up am intention on dependent questions oh elsewhere september.\n\
+No betrayed pleasure possible jointure we in throwing. And can event\n\
+rapid any shall woman green. Hope they dear who its bred. Smiling nothing\n\
+affixed he carried it clothes calling he no. Its something disposing\n\
+departure she favourite tolerably engrossed. Truth short folly court why\n\
+she their balls. Excellence put unaffected reasonable mrs introduced\n\
+conviction she. Nay particular delightful but unpleasant for uncommonly\n\
+who. She travelling acceptance men unpleasant her especially entreaties law.\n\
+Law forth but end any arise chief arose. Old her say learn these large.\n\
+Joy fond many ham high seen this. Few preferred continual sir led incommode\n\
+neglected. Discovered too old insensible collecting unpleasant but\n\
+invitation.";
+
+  en_arr[9] = L"Warmly little before cousin sussex entire men set. Blessing it ladyship\n\
+on sensible judgment settling outweigh. Worse linen an of civil jokes\n\
+leave offer. Parties all clothes removal cheered calling prudent her.\n\
+And residence for met the estimable disposing. Mean if he they been\n\
+no hold mr. Is at much do made took held help. Latter person am secure\n\
+of estate genius at. Throwing consider dwelling bachelor joy her proposal\n\
+laughter. Raptures returned disposed one entirely her men ham. By to\n\
+admire vanity county an mutual as roused. Of an thrown am warmly merely\n\
+result depart supply. Required honoured trifling eat pleasure man relation.\n\
+Assurance yet bed was improving furniture man. Distrusts delighted she\n\
+listening mrs extensive admitting far.";
+
+  en_arr[10] = L"Much evil soon high in hope do view. Out may few northward believing\n\
+attempted. Yet timed being songs marry one defer men our. Although\n\
+finished blessing do of. Consider speaking me prospect whatever if.\n\
+Ten nearer rather hunted six parish indeed number. Allowance repulsive\n\
+sex may contained can set suspected abilities cordially. Do part am he\n\
+high rest that. So fruit to ready it being views match.  To sorry world\n\
+an at do spoil along. Incommode he depending do frankness remainder to.\n\
+Edward day almost active him friend thirty piqued. People as period twenty\n\
+my extent as. Set was better abroad ham plenty secure had horses. Admiration\n\
+has sir decisively excellence say everything inhabiting acceptance.\n\
+Sooner settle add put you sudden him.";
 
   srand(time(NULL));
   if (strcmp(type_lang, "English") == 0) {
-    return en_arr[rand() % 5];
+    return en_arr[rand() % 10];
   } else {
     return ru_arr[rand() % 10];
   }

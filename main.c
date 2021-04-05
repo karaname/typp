@@ -18,7 +18,7 @@ static jmp_buf rbuf;
 static sigjmp_buf scr_buf;
 
 /* signal handler */
-void sigwinch_handler(int sig)
+void sigwinch_handler()
 {
   siglongjmp(scr_buf, 5);
 }
@@ -215,7 +215,7 @@ void get_text()
   }
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
   setlocale(LC_ALL, "");
   signal(SIGWINCH, sigwinch_handler);

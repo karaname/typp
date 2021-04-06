@@ -10,10 +10,9 @@
 #define _name "typp"
 
 wchar_t *generate_text(char *type_lang);
-char *langs[] = {"Русский", "English"};
-int choice, highlight = 0;
-char *quit_msg = "F10 Quit";
-
+static char *langs[] = {"Русский", "English"};
+static int choice, highlight = 0;
+static char *quit_msg = "F10 Quit";
 static jmp_buf rbuf;
 static sigjmp_buf scr_buf;
 

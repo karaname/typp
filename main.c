@@ -7,6 +7,7 @@
 #include <setjmp.h>
 #include <locale.h>
 #include <wchar.h>
+#include <ctype.h>
 #define _name "typp"
 
 wchar_t *generate_text(char *type_lang);
@@ -15,6 +16,10 @@ static int choice, highlight = 0;
 static char *quit_msg = "F10 Quit";
 static jmp_buf rbuf;
 static sigjmp_buf scr_buf;
+static int newlcount;
+static int errcount;
+static int scount;  /* symbol count */
+static int sscount; /* symbol count without space */
 
 /* signal handler */
 void sigwinch_handler()
@@ -67,7 +72,7 @@ void help_info()
   }
 }
 
-void get_result(int err)
+void get_result()
 {
   while (1) {
     if (sigsetjmp(scr_buf, 5)) {
@@ -79,24 +84,39 @@ void get_result(int err)
     refresh();
 
     /* init result window */
-    WINDOW *result_win = newwin(20, 20, 1, 1);
+    WINDOW *result_win = newwin(20, 30, 1, 1);
     box(result_win, 0, 0);
 
     /* title string with colors */
     wattron(result_win, COLOR_PAIR(2));
-    mvwaddstr(result_win, 2, (20 - strlen("Result")) / 2, "Result");
+    mvwaddstr(result_win, 2, (30 - strlen("Result")) / 2, "Result");
     wattroff(result_win, COLOR_PAIR(2));
 
-    /* print result info */
-    char error_buf[20];
-    sprintf(error_buf, "Error count: %d", err);
+    /* result info */
+    /* errors */
+    char error_buf[30];
+    sprintf(error_buf, "Errors: %14d", errcount);
     mvwaddstr(result_win, 5, 2, error_buf);
+
+    /* lines */
+    char lcount_buf[30];
+    sprintf(lcount_buf, "Text lines: %10d", newlcount);
+    mvwaddstr(result_win, 6, 2, lcount_buf);
+
+    /* all symbols */
+    char scount_buf[30];
+    sprintf(scount_buf, "Total characters: %4d", scount);
+    mvwaddstr(result_win, 7, 2, scount_buf);
+
+    /* symbols without space */
+    char sscount_buf[30];
+    sprintf(sscount_buf, "Without spaces: %6d", sscount);
+    mvwaddstr(result_win, 8, 2, sscount_buf);
+
     wrefresh(result_win);
     mvprintw(22, 2, "Press F3 to cancel");
 
-    /* 410 (F11) */
-    choice = getch();
-    if (choice != 410 && choice == KEY_F(3)) {
+    if (getch() == KEY_F(3)) {
       clear();
       break;
     }
@@ -105,9 +125,15 @@ void get_result(int err)
 
 void input_text(wchar_t *ptext, WINDOW *ptext_win)
 {
+  /* counters */
   int xcount = 1;
   int ycount = 1;
-  int errcount = 0;
+  errcount = 0;
+  scount = 0;
+  sscount = 0;
+  /* pointer begin ptext (need for counting) */
+  wchar_t *ptext_st = ptext;
+  /* user input */
   wint_t cuser;
 
   /* set cursor normal station */
@@ -152,12 +178,25 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
     }
     refresh();
   }
-
   wrefresh(ptext_win);
-  sleep(1);
-  clear();
-  curs_set(0);
-  get_result(errcount);
+
+  /* counting characters */
+  scount = (wcslen(ptext_st) - (newlcount - 1));
+  for (sscount = 0; *ptext_st != '\0'; ptext_st++) {
+    if (!(isspace(*ptext_st))) {
+      sscount++;
+    }
+  }
+
+  while (choice = getch()) {
+    if (choice == 10) {
+      clear();
+      curs_set(0);
+      break;
+    }
+  }
+
+  get_result();
 }
 
 void get_text()
@@ -165,6 +204,7 @@ void get_text()
   wchar_t *main_text = generate_text(langs[highlight]);
   int len = wcslen(main_text);
   wchar_t arr[len];
+  int index;
 
   while (1) {
     if (sigsetjmp(scr_buf, 5)) {
@@ -176,7 +216,6 @@ void get_text()
     refresh();
 
     /* fill arr */
-    int index, newl = 0;
     for (index = 0; main_text[index] != '\0'; index++) {
       arr[index] = main_text[index];
     }
@@ -199,11 +238,12 @@ void get_text()
     refresh();
 
     /* print text (extract token text before new line) */
+    newlcount = 0;
     wchar_t *state;
     wchar_t *token = wcstok(arr, L"\n", &state);
     while (token != NULL) {
-      newl++;
-      mvwaddwstr(text_win, newl, 2, token);
+      newlcount++;
+      mvwaddwstr(text_win, newlcount, 2, token);
       token = wcstok(NULL, L"\n", &state);
     }
     wrefresh(text_win);

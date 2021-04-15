@@ -8,6 +8,7 @@
 #include <locale.h>
 #include <wchar.h>
 #include <ctype.h>
+#include <stdbool.h>
 #define _name "typp"
 
 wchar_t *generate_text(char *type_lang);
@@ -136,6 +137,7 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
   size_t scount, lent;
   wchar_t *ptext_st = ptext; /* pointer begin ptext (need for counting) */
   wint_t cuser; /* user input */
+  bool bv;
 
   curs_set(1); /* set cursor normal station */
   while (*ptext != '\0') {
@@ -160,6 +162,7 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
           }
           ptext++;
           wmove(ptext_win, ycount, xcount + 1);
+          bv = false;
         } else {
           if (*ptext == 10) {
             ptext++;
@@ -169,7 +172,17 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
               continue;
             }
           }
-          errcount++;
+
+          if (errcount > 0) {
+            if (bv == false) {
+              errcount++;
+              bv = true;
+            }
+          } else {
+            errcount++;
+            bv = true;
+          }
+
           wattron(ptext_win, COLOR_PAIR(4) | A_BOLD);
           mvwaddnwstr(ptext_win, ycount, xcount + 1, ptext, 1);
           wattroff(ptext_win, COLOR_PAIR(4) | A_BOLD);

@@ -9,6 +9,7 @@
 #include <wchar.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <time.h>
 #define _name "typp"
 
 wchar_t *generate_text(char *type_lang);
@@ -71,8 +72,17 @@ void help_info()
   }
 }
 
-void get_result(int errcount, int scount, int sscount, int wcount)
+void
+get_result(int errcount, int scount, int sscount, int wcount, int sec)
 {
+  int m, s;
+  char time_buf[30];
+  char error_buf[30];
+  char wcount_buf[30];
+  char lcount_buf[30];
+  char scount_buf[30];
+  char sscount_buf[30];
+
   while (1) {
     if (sigsetjmp(scr_buf, 5)) {
       endwin();
@@ -92,29 +102,24 @@ void get_result(int errcount, int scount, int sscount, int wcount)
     wattroff(result_win, COLOR_PAIR(2) | A_BOLD | A_UNDERLINE);
 
     /* result info */
-    /* errors */
-    char error_buf[30];
-    sprintf(error_buf, "Errors: %16d", errcount);
+    m = sec / 60;
+    s = sec - (m * 60);
+    sprintf(time_buf, "Time(m:s) %14d:%d", m, s);
+    mvwaddstr(result_win, 4, 2, time_buf);
+
+    sprintf(error_buf, "Errors: %18d", errcount);
     mvwaddstr(result_win, 5, 2, error_buf);
 
-    /* words */
-    char wcount_buf[30];
-    sprintf(wcount_buf, "Words: %17d", wcount);
+    sprintf(wcount_buf, "Words: %19d", wcount);
     mvwaddstr(result_win, 7, 2, wcount_buf);
 
-    /* lines */
-    char lcount_buf[30];
-    sprintf(lcount_buf, "Text lines: %12d", newlcount);
+    sprintf(lcount_buf, "Text lines: %14d", newlcount);
     mvwaddstr(result_win, 8, 2, lcount_buf);
 
-    /* all symbols */
-    char scount_buf[30];
-    sprintf(scount_buf, "Total symbols: %9d", scount);
+    sprintf(scount_buf, "Total symbols: %11d", scount);
     mvwaddstr(result_win, 9, 2, scount_buf);
 
-    /* symbols without spaces */
-    char sscount_buf[30];
-    sprintf(sscount_buf, "Symbols less spaces: %3d", sscount);
+    sprintf(sscount_buf, "Symbols less spaces: %5d", sscount);
     mvwaddstr(result_win, 10, 2, sscount_buf);
 
     wrefresh(result_win);
@@ -129,17 +134,21 @@ void get_result(int errcount, int scount, int sscount, int wcount)
 
 void input_text(wchar_t *ptext, WINDOW *ptext_win)
 {
+  time_t start_t, end_t;
   int xcount = 1;
   int ycount = 1;
   int errcount = 0;
   int sscount = 0;
   int wcount = 0;
+  int sec;
   size_t scount, lent;
   wchar_t *ptext_st = ptext; /* pointer begin ptext (need for counting) */
   wint_t cuser; /* user input */
   bool bv;
 
   curs_set(1); /* set cursor normal station */
+  time(&start_t);
+
   while (*ptext != '\0') {
     wmove(ptext_win, ycount, xcount + 1);
     wget_wch(ptext_win, &cuser);
@@ -211,15 +220,18 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
     ptext_st++;
   }
 
+  /* wait enter from user */
   while (choice = getch()) {
     if (choice == 10) {
+      time(&end_t);
       clear();
       curs_set(0);
       break;
     }
   }
 
-  get_result(errcount, scount, sscount, wcount);
+  sec = difftime(end_t, start_t);
+  get_result(errcount, scount, sscount, wcount, sec);
 }
 
 void get_text()

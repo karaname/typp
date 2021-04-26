@@ -104,7 +104,7 @@ get_result(int errcount, int scount, int sscount, int wcount, int sec)
     /* result info */
     m = sec / 60;
     s = sec - (m * 60);
-    sprintf(time_buf, "Time(m:s) %14d:%d", m, s);
+    sprintf(time_buf, "Time(m:s) %14.2d:%.2d", m, s);
     mvwaddstr(result_win, 4, 2, time_buf);
 
     sprintf(error_buf, "Errors: %18d", errcount);

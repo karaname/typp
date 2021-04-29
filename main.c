@@ -19,6 +19,7 @@ static char *langs[] = {"Русский", "English"};
 static int choice, highlight = 0;
 static int newlcount;
 static char *quit_msg = "F10 Quit";
+static char *rating;
 static jmp_buf rbuf;
 static sigjmp_buf scr_buf;
 
@@ -73,10 +74,44 @@ void help_info()
   }
 }
 
+void get_wpm_rat(int wv)
+{
+  if (wv < 24) {
+    rating = "slow";
+  } else if (wv >= 24 && wv < 32) {
+    rating = "fine";
+  } else if (wv >= 32 && wv < 52) {
+    rating = "middle";
+  } else if (wv >= 52 && wv < 70) {
+    rating = "well";
+  } else if (wv >= 70 && wv <= 80) {
+    rating = "pro";
+  } else if (wv > 80) {
+    rating = "best";
+  }
+}
+
+void get_cpm_rat(int cv)
+{
+  if (cv < 120) {
+    rating = "slow";
+  } else if (cv >= 120 && cv < 160) {
+    rating = "fine";
+  } else if (cv >= 160 && cv < 260) {
+    rating = "middle";
+  } else if (cv >= 260 && cv < 350) {
+    rating = "well";
+  } else if (cv >= 350 && cv < 400) {
+    rating = "pro";
+  } else if (cv > 400) {
+    rating = "best";
+  }
+}
+
 void
 get_result(int errcount, int scount, int sscount, int wcount, int sec)
 {
-  int m, s;
+  int m, s, wpm, cpm;
   char time_buf[30];
   char error_buf[30];
   char roundt_buf[8];
@@ -97,23 +132,9 @@ get_result(int errcount, int scount, int sscount, int wcount, int sec)
     term_size_check();
     refresh();
 
-    /* init result window */
-    WINDOW *result_win = newwin(20, 32, 1, 1);
-    box(result_win, 0, 0);
-
-    /* title string with colors */
-    wattron(result_win, COLOR_PAIR(2) | A_BOLD | A_UNDERLINE);
-    mvwaddstr(result_win, 2, (32 - strlen("Result")) / 2, "Result");
-    wattroff(result_win, COLOR_PAIR(2) | A_BOLD | A_UNDERLINE);
-
-    /* result info */
+    /* counting */
     m = sec / 60;
     s = sec - (m * 60);
-    sprintf(time_buf, "Time(m:s) %14.2d:%.2d", m, s);
-    mvwaddstr(result_win, 4, 2, time_buf);
-
-    sprintf(error_buf, "Errors: %18d", errcount);
-    mvwaddstr(result_win, 5, 2, error_buf);
 
     if (s >= 30 && s <= 40) {
       s = 5;
@@ -124,33 +145,65 @@ get_result(int errcount, int scount, int sscount, int wcount, int sec)
     }
 
     sprintf(roundt_buf, "%d.%d", m, s);
+    wpm = (int)round(((scount / 5) - errcount) / (double)atof(roundt_buf));
+    cpm = (int)round(scount / (double)atof(roundt_buf));
+
+    /* get user rating */
     if ((strcmp(langs[highlight], "English")) == 0) {
-      sprintf(wpm_buf, "WPM: %21.0f", round(((scount / 5) - errcount) / (double)atof(roundt_buf)));
-      mvwaddstr(result_win, 7, 2, wpm_buf);
+      get_wpm_rat(wpm);
     } else {
-      sprintf(cpm_buf, "CPM: %21.0f", round(scount / (double)atof(roundt_buf)));
-      mvwaddstr(result_win, 7, 2, cpm_buf);
+      get_cpm_rat(cpm);
+    }
+
+    /* init result window */
+    WINDOW *result_win = newwin(20, 32, 1, 1);
+    box(result_win, 0, 0);
+
+    /* title string with colors */
+    wattron(result_win, COLOR_PAIR(2) | A_BOLD | A_UNDERLINE);
+    mvwaddstr(result_win, 2, (32 - strlen("Result")) / 2, "Result");
+    wattroff(result_win, COLOR_PAIR(2) | A_BOLD | A_UNDERLINE);
+
+    /* result info */
+    mvwaddstr(result_win, 5, 2, "Rating:");
+    wattron(result_win, COLOR_PAIR(1));
+    mvwaddstr(result_win, 5, 10, rating);
+    wattroff(result_win, COLOR_PAIR(1));
+
+    sprintf(time_buf, "Time(m:s) %14.2d:%.2d", m, s);
+    mvwaddstr(result_win, 7, 2, time_buf);
+
+    sprintf(error_buf, "Errors: %18d", errcount);
+    mvwaddstr(result_win, 8, 2, error_buf);
+
+    if ((strcmp(langs[highlight], "English")) == 0) {
+      sprintf(wpm_buf, "WPM: %21d", wpm);
+      mvwaddstr(result_win, 10, 2, wpm_buf);
+    } else {
+      sprintf(cpm_buf, "CPM: %21d", cpm);
+      mvwaddstr(result_win, 10, 2, cpm_buf);
     }
 
     sprintf(lang_buf, "Text: %s", langs[highlight]);
-    mvwaddstr(result_win, 9, 2, lang_buf);
+    mvwaddstr(result_win, 12, 2, lang_buf);
 
     sprintf(wcount_buf, "Words: %19d", wcount);
-    mvwaddstr(result_win, 10, 2, wcount_buf);
+    mvwaddstr(result_win, 13, 2, wcount_buf);
 
     sprintf(lcount_buf, "Text lines: %14d", newlcount);
-    mvwaddstr(result_win, 11, 2, lcount_buf);
+    mvwaddstr(result_win, 14, 2, lcount_buf);
 
     sprintf(scount_buf, "Total symbols: %11d", scount);
-    mvwaddstr(result_win, 12, 2, scount_buf);
+    mvwaddstr(result_win, 15, 2, scount_buf);
 
     sprintf(sscount_buf, "Symbols less spaces: %5d", sscount);
-    mvwaddstr(result_win, 13, 2, sscount_buf);
+    mvwaddstr(result_win, 16, 2, sscount_buf);
 
     wrefresh(result_win);
     mvprintw(22, 2, "Press F3 to cancel");
 
     if (getch() == KEY_F(3)) {
+      rating = NULL;
       clear();
       break;
     }

@@ -19,7 +19,7 @@ static char *langs[] = {"Русский", "English"};
 static int choice, highlight = 0;
 static int newlcount;
 static char *quit_msg = "F10 Quit";
-static char *rating;
+static char *rating = NULL;
 static jmp_buf rbuf;
 static sigjmp_buf scr_buf;
 
@@ -56,8 +56,8 @@ void help_info()
     box(help_win, 0, 0);
 
     /* include some info text */
-    mvwaddstr(help_win, 2, 2, "1. Help info -");
-    mvwaddstr(help_win, 3, 2, "2. Help info -");
+    mvwprintw(help_win, 1, 1, "Help");
+    //mvwaddstr(help_win, 1, 1, "Help info");
     wrefresh(help_win);
 
     /* print cancel / quit messages */
@@ -112,16 +112,7 @@ void
 get_result(int errcount, int scount, int sscount, int wcount, int sec)
 {
   int m, s, wpm, cpm;
-  char time_buf[30];
-  char error_buf[30];
   char roundt_buf[8];
-  char lang_buf[30];
-  char wpm_buf[30];
-  char cpm_buf[30];
-  char wcount_buf[30];
-  char lcount_buf[30];
-  char scount_buf[30];
-  char sscount_buf[30];
 
   while (1) {
     if (sigsetjmp(scr_buf, 5)) {
@@ -166,42 +157,29 @@ get_result(int errcount, int scount, int sscount, int wcount, int sec)
 
     /* result info */
     mvwaddstr(result_win, 5, 2, "Rating:");
-    wattron(result_win, COLOR_PAIR(1));
-    mvwaddstr(result_win, 5, 10, rating);
-    wattroff(result_win, COLOR_PAIR(1));
-
-    sprintf(time_buf, "Time(m:s) %14.2d:%.2d", m, s);
-    mvwaddstr(result_win, 7, 2, time_buf);
-
-    sprintf(error_buf, "Errors: %18d", errcount);
-    mvwaddstr(result_win, 8, 2, error_buf);
-
-    if ((strcmp(langs[highlight], "English")) == 0) {
-      sprintf(wpm_buf, "WPM: %21d", wpm);
-      mvwaddstr(result_win, 10, 2, wpm_buf);
-    } else {
-      sprintf(cpm_buf, "CPM: %21d", cpm);
-      mvwaddstr(result_win, 10, 2, cpm_buf);
+    if (rating != NULL) {
+      wattron(result_win, COLOR_PAIR(1));
+      mvwaddstr(result_win, 5, 10, rating);
+      wattroff(result_win, COLOR_PAIR(1));
     }
 
-    sprintf(lang_buf, "Text: %s", langs[highlight]);
-    mvwaddstr(result_win, 12, 2, lang_buf);
+    mvwprintw(result_win, 7, 2, "Time(m:s) %14.2d:%.2d", m, s);
+    mvwprintw(result_win, 8, 2, "Errors: %18d", errcount);
 
-    sprintf(wcount_buf, "Words: %19d", wcount);
-    mvwaddstr(result_win, 13, 2, wcount_buf);
+    if ((strcmp(langs[highlight], "English")) == 0) {
+      mvwprintw(result_win, 10, 2, "WPM: %21d", wpm);
+    } else {
+      mvwprintw(result_win, 10, 2, "CPM: %21d", cpm);
+    }
 
-    sprintf(lcount_buf, "Text lines: %14d", newlcount);
-    mvwaddstr(result_win, 14, 2, lcount_buf);
-
-    sprintf(scount_buf, "Total symbols: %11d", scount);
-    mvwaddstr(result_win, 15, 2, scount_buf);
-
-    sprintf(sscount_buf, "Symbols less spaces: %5d", sscount);
-    mvwaddstr(result_win, 16, 2, sscount_buf);
-
+    mvwprintw(result_win, 12, 2, "Text: %s", langs[highlight]);
+    mvwprintw(result_win, 13, 2, "Words: %19d", wcount);
+    mvwprintw(result_win, 14, 2, "Text lines: %14d", newlcount);
+    mvwprintw(result_win, 15, 2, "Total symbols: %11d", scount);
+    mvwprintw(result_win, 16, 2, "Symbols less spaces: %5d", sscount);
     wrefresh(result_win);
-    mvprintw(22, 2, "Press F3 to cancel");
 
+    mvprintw(22, 2, "Press F3 to cancel");
     if (getch() == KEY_F(3)) {
       rating = NULL;
       clear();
@@ -371,6 +349,7 @@ int main(void)
 {
   setlocale(LC_ALL, "");
   signal(SIGWINCH, sigwinch_handler);
+  signal(SIGINT, SIG_IGN);
 
   if (!initscr()) {
     fprintf(stderr, "%s: Error initialising ncurses\n", _name);

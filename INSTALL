@@ -9,7 +9,7 @@ make
 gcc
 
 Spell:
-autoreconf -iv && ./configure && make install
+autoreconf -iv && ./configure && sudo make install
 
 File Structure:
 /usr/local/bin/typp

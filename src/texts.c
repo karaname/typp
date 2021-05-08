@@ -1,3 +1,23 @@
+/*
+typp - practice of typing text from the keyboard.
+texts.c - return random text for TUI.
+
+Copyright (C) 2021 Kirill Rekhov <rekhov.ka@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -48,7 +68,7 @@ wchar_t *generate_text(char *type_lang)
 показалась режиссёру интересной, и в марте 1967 года соавторы направили на\n\
 киностудию \"Мосфильм\" сценарную заявку с рабочим названием \"Контрабандисты\".\n\
 Излагая концепцию будущей ленты, кинодраматурги отметили, что Юрий Никулин\n\
-сыграет в ней \"скромного служащего отнюдь не героического вида и нрава\n\
+сыграет в ней \"скромного служащего отнюдь не героического вида и нрава.\n\
 В обоснование истории с ввозом золота и бриллиантов в Советский Союз они\n\
 сослались на экономические издания и представили тезисы о завоевании\n\
 советским рублём \"солидных позиций на международной валютной арене\":\n\

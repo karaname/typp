@@ -7,3 +7,7 @@ From the available texts <strong>English</strong> and <strong>Russian</strong>.<
 
 ## Result Example
 ![](images/result.png)
+
+## Advice
+Use <strong>touch typing method</strong> to achieve great results!
+![](images/keyboard.png)

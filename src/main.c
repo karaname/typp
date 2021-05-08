@@ -1,3 +1,23 @@
+/*
+typp - practice of typing text from the keyboard.
+main.c - all TUI interface here.
+
+Copyright (C) 2021 Kirill Rekhov <rekhov.ka@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -124,7 +144,7 @@ void help_info()
     wattron(help_win, A_UNDERLINE | A_STANDOUT);
     mvwaddstr(help_win, 14, 42, "Enter");
     wattroff(help_win, A_UNDERLINE | A_STANDOUT);
-    mvwaddstr(help_win, 19, 1, "Typing Practice - v0.1.0");
+    mvwaddstr(help_win, 19, 1, "Typing Practice - v0.1.1");
     mvwaddstr(help_win, 20, 1, "Typing Practice written by Kirill Rekhov <rekhov.ka@gmail.com>");
     wrefresh(help_win);
 
@@ -183,7 +203,7 @@ void
 get_result(int errcount, int scount, int sscount, int wcount, int sec)
 {
   int m, s, wpm, cpm;
-  char roundt_buf[8];
+  char roundt_buf[15];
 
   while (1) {
     if (sigsetjmp(scr_buf, 5)) {
@@ -271,7 +291,7 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
   size_t scount, lent;
   wchar_t *ptext_st = ptext; /* pointer begin ptext (need for counting) */
   wint_t cuser; /* user input */
-  bool bv;
+  bool bv = false;
 
   curs_set(1); /* set cursor normal station */
   time(&start_t);
@@ -293,7 +313,7 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
             ycount++;   /* go to the next line */
           } else {
             wattron(ptext_win, COLOR_PAIR(3) | A_BOLD);
-            mvwaddnwstr(ptext_win, ycount, xcount, &cuser, 1);
+            mvwaddnwstr(ptext_win, ycount, xcount, (wchar_t *)&cuser, 1);
             wattroff(ptext_win, COLOR_PAIR(3) | A_BOLD);
           }
           ptext++;
@@ -309,12 +329,7 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
             }
           }
 
-          if (errcount > 0) {
-            if (bv == false) {
-              errcount++;
-              bv = true;
-            }
-          } else {
+          if (bv == false) {
             errcount++;
             bv = true;
           }
@@ -348,7 +363,7 @@ void input_text(wchar_t *ptext, WINDOW *ptext_win)
   }
 
   /* wait enter from user */
-  while (choice = getch()) {
+  while ((choice = getch())) {
     if (choice == 10) {
       time(&end_t);
       clear();
@@ -454,7 +469,7 @@ int main(void)
     refresh();
 
     /* init title window */
-    char *title_msg = "Typing Practice (typp) - v0.1.0";
+    char *title_msg = "Typing Practice (typp) - v0.1.1";
     WINDOW *title = newwin(4, COLS, 1, 0);
     box(title, 0, 0);
 

@@ -3,4 +3,4 @@ typp_CFLAGS = ${ncursesw_CFLAGS} -Wall
 typp_LDADD = ${ncursesw_LIBS}
 
 bin_PROGRAMS=typp
-typp_SOURCES=texts.c main.c
+typp_SOURCES=src/texts.c src/main.c

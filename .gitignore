@@ -3,6 +3,7 @@ typp
 *.o
 .gdb_history
 .deps/
+.dirstamp
 Makefile
 Makefile.in
 aclocal.m4
@@ -13,6 +14,7 @@ config.h.in
 config.log
 config.status
 configure
+configure~
 depcomp
 install-sh
 missing

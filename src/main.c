@@ -199,7 +199,7 @@ get_result(int errcount, int scount, int sscount,
 int wcount, int sec)
 {
   int m, s, wpm, cpm;
-  char roundtime_arr[20];
+  char roundtime[20];
   char *rating;
 
   if (sigsetjmp(scr_buf, 5))
@@ -219,15 +219,16 @@ int wcount, int sec)
   } else if (s > 40) {
     m++; s = 0;
   }
+  sprintf(roundtime, "%d.%d", m, s);
 
-  sprintf(roundtime_arr, "%d.%d", m, s); // ??? что это делает ? забыл
-  wpm = (int)round(((scount / 5) - errcount) / (double)atof(roundtime_arr));
-  cpm = (int)round(scount / (double)atof(roundtime_arr));
-
-  /* get user rating */
-  (lang_highlight)
-    ? (rating = get_wpm_rat(wpm))
-    : (rating = get_cpm_rat(cpm));
+  /* speed count / get user rating */
+  if (lang_highlight) {
+    wpm = (int)round(((scount / 5) - errcount) / (double)atof(roundtime));
+    rating = get_wpm_rat(wpm);
+  } else {
+    cpm = (int)round(scount / (double)atof(roundtime));
+    rating = get_cpm_rat(cpm);
+  }
 
   if (rating == NULL) {
     endwin();

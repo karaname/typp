@@ -24,7 +24,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include <setjmp.h>
 #include <locale.h>
 #include <wchar.h>
 #include <ctype.h>
@@ -33,11 +32,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <math.h>
 #include <errno.h>
 
+size_t newlcount;
 int cg, lang_highlight = 0;
 char *langs[2] = {"Russian", "English"};
-size_t newlcount;
-jmp_buf rbuf, hbuf;
-sigjmp_buf scr_buf;
 
 struct tui_elements {
   WINDOW *main_title_win;
@@ -55,18 +52,22 @@ struct tui_elements {
 #define BOX_WBORDER_ZERO(W) (box(W, 0, 0))
 #define END_CLEAR endwin(); clear();
 #define END_CLEAR_REFRESH endwin(); clear(); refresh();
-#define VERSION "Typing Practice - v1.1.7"
+#define VERSION "Typing Practice - v1.1.8"
 #define QUIT_MSG "F10 Quit"
 #define CANCEL_MSG "F3 Cancel"
 #define HELP_MSG "F1 Help"
 #define ASCII_ENTER 10
 #define ASCII_SPACE 32
 
-/* returns to the beginning of the loop
-   recalculate LINES and COLS values */
+/* If the user changed the terminal, the program will exit
+   The user should re-enter it to update the LINES / COLS values
+   If do not use this handler, the interface will be not correct */
 void resize_term_handler()
 {
-  siglongjmp(scr_buf, 1);
+  endwin();
+  printf("%s: The terminal size has changed, \
+please re-enter the program\n", program_name);
+  exit(EXIT_SUCCESS);
 }
 
 void *wrap_malloc(size_t size)
@@ -369,7 +370,6 @@ void
 display_text(wchar_t *main_text, size_t tlen, WINDOW *text_win)
 {
   wchar_t *token, *state, *pt;
-  //size_t text_len = tlen * sizeof(wchar_t) + 1;
   size_t text_len = 2048 * sizeof(wchar_t) + 1;
 
   if ((pt = malloc(text_len)) == NULL) {
@@ -486,12 +486,6 @@ int main(void)
   /* ignore SIGINT signal (CTRL + C)
      the program has a way out key 'F10 Quit' */
   signal(SIGINT, SIG_IGN);
-
-  /* sigwinch */
-  if (sigsetjmp(scr_buf, 1)) {
-    endwin();
-    exit(EXIT_SUCCESS);
-  }
 
   if (!initscr()) {
     fprintf(stderr, "%s: Error initialising ncurses\n", program_name);

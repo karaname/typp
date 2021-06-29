@@ -55,10 +55,10 @@ struct tui_elements {
 #define BOX_WBORDER_ZERO(W) (box(W, 0, 0))
 #define END_CLEAR endwin(); clear();
 #define END_CLEAR_REFRESH endwin(); clear(); refresh();
-#define VERSION "Typing Practice - v1.1.6"
-#define QUIT_KEY "F10 Quit"
-#define CANCEL_KEY "F3 Cancel"
-#define HELP_KEY "F1 Help"
+#define VERSION "Typing Practice - v1.1.7"
+#define QUIT_MSG "F10 Quit"
+#define CANCEL_MSG "F3 Cancel"
+#define HELP_MSG "F1 Help"
 #define ASCII_ENTER 10
 #define ASCII_SPACE 32
 
@@ -66,7 +66,18 @@ struct tui_elements {
    recalculate LINES and COLS values */
 void resize_term_handler()
 {
-  siglongjmp(scr_buf, 5);
+  siglongjmp(scr_buf, 1);
+}
+
+void *wrap_malloc(size_t size)
+{
+  void *p;
+  if ((p = malloc(size * sizeof(wchar_t))) == NULL) {
+    endwin();
+    perror("typp");
+    exit(EXIT_FAILURE);
+  }
+  return p;
 }
 
 /* check 80 columns by 24 rows terminal size */
@@ -81,12 +92,6 @@ void term_size_check()
 
 void rating_info()
 {
-  if (sigsetjmp(scr_buf, 5))
-    END_CLEAR_REFRESH;
-
-  term_size_check();
-  refresh();
-
   tuiv.rating_win = newwin(22, 80, (LINES - 24) / 2, (COLS - 80) / 2);
   BOX_WBORDER_ZERO(tuiv.rating_win);
 
@@ -107,8 +112,8 @@ void rating_info()
   mvwaddstr(tuiv.rating_win, 16, 2, "more 400 (best)");
   wrefresh(tuiv.rating_win);
 
-  mvprintw(LINES - 2, 4, "%s", CANCEL_KEY);
-  mvprintw(LINES - 2, (COLS - strlen(QUIT_KEY)) - 4, "%s", QUIT_KEY);
+  mvprintw(LINES - 2, 4, "%s", CANCEL_MSG);
+  mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
 
   while ((cg = getch())) {
     switch (cg) {
@@ -116,25 +121,19 @@ void rating_info()
         endwin();
         exit(EXIT_SUCCESS);
       case KEY_F(3):
-        longjmp(hbuf, 5);
+        clear();
+        return;
     }
   }
 }
 
 void help_info()
 {
-  if (setjmp(hbuf), 5)
-    END_CLEAR_REFRESH;
-
-  if (sigsetjmp(scr_buf, 5))
-    END_CLEAR_REFRESH;
-
-  term_size_check();
-  refresh();
 
   tuiv.help_win = newwin(22, 80, (LINES - 24) / 2, (COLS - 80) / 2);
   BOX_WBORDER_ZERO(tuiv.help_win);
 
+  refresh();
   mvwaddstr(tuiv.help_win, 0, (80 - strlen("Help")) / 2, "Help");
   mvwaddstr(tuiv.help_win, 1, 1, "This free software, and you are welcome to redistribute in under terms of");
   mvwaddstr(tuiv.help_win, 2, 1, "MIT License. This software is intended for the practice of typing text from");
@@ -153,10 +152,9 @@ void help_info()
   wattroff(tuiv.help_win, A_UNDERLINE | A_STANDOUT);
   mvwaddstr(tuiv.help_win, 19, 1, VERSION);
   mvwaddstr(tuiv.help_win, 20, 1, "Typing Practice written by Kirill Rekhov <rekhov.ka@gmail.com>");
+  mvprintw(LINES - 2, 4, "%s", CANCEL_MSG);
+  mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
   wrefresh(tuiv.help_win);
-
-  mvprintw(LINES - 2, 4, "%s", CANCEL_KEY);
-  mvprintw(LINES - 2, (COLS - strlen(QUIT_KEY)) - 4, "%s", QUIT_KEY);
 
   while ((cg = getch())) {
     switch (cg) {
@@ -164,10 +162,12 @@ void help_info()
         endwin();
         exit(EXIT_SUCCESS);
       case KEY_F(3):
-        longjmp(rbuf, 4);
+        clear();
+        return;
       case ASCII_ENTER:
         delwin(tuiv.help_win);
         rating_info();
+        return;
     }
   }
 }
@@ -198,15 +198,9 @@ void
 get_result(int errcount, int scount, int sscount,
 int wcount, int sec)
 {
-  int m, s, wpm, cpm;
+  int m, s, wpm = 0, cpm = 0;
   char roundtime[20];
   char *rating;
-
-  if (sigsetjmp(scr_buf, 5))
-    END_CLEAR_REFRESH;
-
-  term_size_check();
-  refresh();
 
   m = sec / 60;
   s = sec - (m * 60);
@@ -239,6 +233,7 @@ int wcount, int sec)
   tuiv.result_win = newwin(20, 35, 1, 1);
   BOX_WBORDER_ZERO(tuiv.result_win);
 
+  refresh();
   wattron(tuiv.result_win, COLOR_PAIR(2) | A_BOLD | A_UNDERLINE);
   mvwaddstr(tuiv.result_win, 2, (35 - strlen("Result")) / 2, "Result");
   wattroff(tuiv.result_win, COLOR_PAIR(2) | A_BOLD | A_UNDERLINE);
@@ -265,12 +260,12 @@ int wcount, int sec)
 
   while ((cg = getch())) {
     if (cg == KEY_F(3))
-      longjmp(rbuf, 4);
+      return;
   }
 }
 
 void
-input_text_and_free(wchar_t *main_text, WINDOW *text_win)
+input_text(wchar_t *main_text, WINDOW *text_win)
 {
   wchar_t *pts = main_text;     /* pointer to the beginning of the text (need for counting) */
   wchar_t error_char[2];        /* in case of discrepancy */
@@ -290,54 +285,50 @@ input_text_and_free(wchar_t *main_text, WINDOW *text_win)
      display in terminal, etc. */
   while (main_text[wc] != '\0') {
     wmove(text_win, ycount, xcount + 1);
-    if (wget_wch(text_win, &cuser) != ERR) {
-      switch (cuser) {
-        case KEY_F(10):
-          endwin();
-          exit(EXIT_SUCCESS);
-        case KEY_F(3):
-          longjmp(rbuf, 4);
-        default:
-          if (main_text[wc] == cuser) {
-            xcount++;
-            if (cuser == ASCII_ENTER) {
-              xcount = 1;  /* back to first character of line */
-              ycount++;    /* go to the next line */
-            } else {
-              wattron(text_win, COLOR_BOLD(3));
-              mvwaddnwstr(text_win, ycount, xcount, (wchar_t *)&cuser, 1);
-              wattroff(text_win, COLOR_BOLD(3));
-            }
+    wget_wch(text_win, &cuser);
 
-            wc++;
-            wmove(text_win, ycount, xcount + 1);
-            err_bool = false;
+    switch (cuser) {
+      case KEY_F(10):
+        endwin();
+        exit(EXIT_SUCCESS);
+      case KEY_F(3):
+        return;
+      default:
+        if (main_text[wc] == cuser) {
+          xcount++;
+          if (cuser == ASCII_ENTER) {
+            xcount = 1;  /* back to first character of line */
+            ycount++;    /* go to the next line */
           } else {
-            if (main_text[wc] == ASCII_ENTER) {
-              wc++;
-              xcount = 1;
-              ycount++;
-
-              if (cuser == ASCII_SPACE)
-                continue;
-            }
-
-            if (err_bool == false) {
-              errcount++;
-              err_bool = true;
-            }
-
-            swprintf(error_char, 2, L"%lc", main_text[wc]);
-            wattron(text_win, COLOR_BOLD(4));
-            mvwaddnwstr(text_win, ycount, xcount + 1, error_char, 1);
-            wattroff(text_win, COLOR_BOLD(4));
+            wattron(text_win, COLOR_BOLD(3));
+            mvwaddnwstr(text_win, ycount, xcount, (wchar_t *)&cuser, 1);
+            wattroff(text_win, COLOR_BOLD(3));
           }
-      }
-    } else {
-      free(main_text);
-      longjmp(rbuf, 4);
-    }
 
+          wc++;
+          wmove(text_win, ycount, xcount + 1);
+          err_bool = false;
+        } else {
+          if (main_text[wc] == ASCII_ENTER) {
+            wc++;
+            xcount = 1;
+            ycount++;
+
+            if (cuser == ASCII_SPACE)
+              continue;
+          }
+
+          if (err_bool == false) {
+            errcount++;
+            err_bool = true;
+          }
+
+          swprintf(error_char, 2, L"%lc", main_text[wc]);
+          wattron(text_win, COLOR_BOLD(4));
+          mvwaddnwstr(text_win, ycount, xcount + 1, error_char, 1);
+          wattroff(text_win, COLOR_BOLD(4));
+        }
+    }
     refresh();
     wrefresh(text_win);
   }
@@ -362,7 +353,6 @@ input_text_and_free(wchar_t *main_text, WINDOW *text_win)
   /* wait enter from user */
   while ((cg = getch())) {
     if (cg == ASCII_ENTER) {
-      free(main_text);
       time(&end_t);
       curs_set(0);
       clear();
@@ -376,11 +366,39 @@ input_text_and_free(wchar_t *main_text, WINDOW *text_win)
 }
 
 void
-generate_text(wchar_t *main_text, char *name, int offsets[])
+display_text(wchar_t *main_text, size_t tlen, WINDOW *text_win)
 {
+  wchar_t *token, *state, *pt;
+  //size_t text_len = tlen * sizeof(wchar_t) + 1;
+  size_t text_len = 2048 * sizeof(wchar_t) + 1;
+
+  if ((pt = malloc(text_len)) == NULL) {
+    endwin();
+    perror("typp");
+    exit(EXIT_FAILURE);
+  }
+
+  memcpy(pt, main_text, text_len);
+
+  token = wcstok(pt, L"\n", &state);
+  for (newlcount = 1; token != NULL; newlcount++) {
+    mvwaddwstr(tuiv.text_win, newlcount, 2, token);
+    token = wcstok(NULL, L"\n", &state);
+  }
+
+  newlcount--;
+  free(pt);
+
+  refresh();
+  wrefresh(tuiv.text_win);
+}
+
+size_t
+get_text_and_len(wchar_t *main_text, char *name, int offsets[])
+{
+  size_t n;
   wint_t c;
   FILE *stream;
-  wchar_t *pmt = main_text;
   char fpath[32] = "/usr/local/share/typp/";
 
   strcat(fpath, name);
@@ -404,52 +422,22 @@ generate_text(wchar_t *main_text, char *name, int offsets[])
   srand(time(NULL));
   fseek(stream, offsets[rand() % 11], SEEK_SET);
 
-  for (int i = 0; (c = fgetwc(stream)) != WEOF; i++) {
+  for (n = 0; (c = fgetwc(stream)) != WEOF; n++) {
     if (c == '#') {
-      pmt[i] = '\0';
+      main_text[n] = '\0';
       break;
     }
-    pmt[i] = c;
+    main_text[n] = c;
   }
 
   fclose(stream);
+  return n;
 }
 
-void
-display_text(wchar_t *main_text, WINDOW *text_win)
+void lets_start()
 {
-  wchar_t *token, *state, *pt;
-  size_t text_len = wcslen(main_text) * sizeof(wchar_t);
-
-  if ((pt = malloc(text_len)) == NULL) {
-    endwin();
-    perror("typp");
-    exit(EXIT_FAILURE);
-  }
-
-  memcpy(pt, main_text, text_len);
-
-  token = wcstok(pt, L"\n", &state);
-  for (newlcount = 1; token != NULL; newlcount++) {
-    mvwaddwstr(tuiv.text_win, newlcount, 2, token);
-    token = wcstok(NULL, L"\n", &state);
-  }
-
-  newlcount--;
-  free(pt);
-
-  refresh();
-  wrefresh(tuiv.text_win);
-}
-
-void get_text()
-{
-  wchar_t *main_text = malloc(2048 * sizeof(wchar_t));
-  if (main_text == NULL) {
-    endwin();
-    perror("typp");
-    exit(EXIT_FAILURE);
-  }
+  size_t tlen;
+  wchar_t *main_text;
 
   /* arrays of number bytes where texts started, needed to
      read files (eng.typp / rus.typp) from the desired position */
@@ -465,15 +453,11 @@ void get_text()
     5960, 6755, 7509
   };
 
-  (lang_highlight)
-    ? generate_text(main_text, "eng.typp", en_offsets)
-    : generate_text(main_text, "rus.typp", ru_offsets);
-
-  if (sigsetjmp(scr_buf, 5))
-    END_CLEAR;
-
-  term_size_check();
-  refresh();
+  main_text = wrap_malloc(2048);
+  if (lang_highlight)
+    tlen = get_text_and_len(main_text, "eng.typp", en_offsets);
+  else
+    tlen = get_text_and_len(main_text, "rus.typp", ru_offsets);
 
   tuiv.note_msg = "Let's start typing ...";
   tuiv.text_win = newwin(20, 80, (LINES - 21) / 2, (COLS - 80) / 2);
@@ -485,11 +469,13 @@ void get_text()
            "%s", tuiv.note_msg);
   attroff(COLOR_PAIR(1));
 
-  mvprintw(LINES - 2, 4, "%s", CANCEL_KEY);
-  mvprintw(LINES - 2, (COLS - strlen(QUIT_KEY)) - 4, "%s", QUIT_KEY);
+  mvprintw(LINES - 2, 4, "%s", CANCEL_MSG);
+  mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
 
-  display_text(main_text, tuiv.text_win);
-  input_text_and_free(main_text, tuiv.text_win);
+  display_text(main_text, tlen, tuiv.text_win);
+  input_text(main_text, tuiv.text_win);
+  free(main_text);
+  clear();
 }
 
 int main(void)
@@ -501,54 +487,50 @@ int main(void)
      the program has a way out key 'F10 Quit' */
   signal(SIGINT, SIG_IGN);
 
+  /* sigwinch */
+  if (sigsetjmp(scr_buf, 1)) {
+    endwin();
+    exit(EXIT_SUCCESS);
+  }
+
   if (!initscr()) {
     fprintf(stderr, "%s: Error initialising ncurses\n", program_name);
     exit(EXIT_FAILURE);
   }
 
-  /* cancel to main menu */
-  if (setjmp(rbuf), 4) {
-    END_CLEAR;
-  }
-
-  /* sigwinch */
-  if (sigsetjmp(scr_buf, 5)) {
-    END_CLEAR_REFRESH;
-  }
-
-  noecho();
-  curs_set(0);
-  keypad(stdscr, TRUE);
-  term_size_check();
-
-  if (has_colors()) {
-    start_color();
-    init_pair(1, COLOR_CYAN, COLOR_BLACK);
-    init_pair(2, COLOR_MAGENTA, COLOR_BLACK);
-    init_pair(3, COLOR_GREEN, COLOR_BLACK);
-    init_pair(4, COLOR_RED, COLOR_BLACK);
-  }
-
-  refresh();
-  tuiv.main_title = VERSION;
-  tuiv.main_title_win = newwin(4, COLS, 1, 0);
-  BOX_WBORDER_ZERO(tuiv.main_title_win);
-
-  wattron(tuiv.main_title_win, COLOR_PAIR(1));
-  mvwprintw(tuiv.main_title_win, 1, (COLS - strlen(tuiv.main_title)) / 2,
-                                    "%s", tuiv.main_title);
-  wattroff(tuiv.main_title_win, COLOR_PAIR(1));
-  wrefresh(tuiv.main_title_win);
-
-  tuiv.sel_lang_title = "Please, select language for text:";
-  attron(COLOR_BOLD(2));
-  mvprintw(7, (COLS - strlen(tuiv.sel_lang_title)) / 2, "%s", tuiv.sel_lang_title);
-  attroff(COLOR_BOLD(2));
-
-  mvprintw(LINES - 2, 4, "%s", HELP_KEY);
-  mvprintw(LINES - 2, (COLS - strlen(QUIT_KEY)) - 4, "%s", QUIT_KEY);
-
   while (true) {
+    noecho();
+    curs_set(0);
+    keypad(stdscr, TRUE);
+    term_size_check();
+
+    if (has_colors()) {
+      start_color();
+      init_pair(1, COLOR_CYAN, COLOR_BLACK);
+      init_pair(2, COLOR_MAGENTA, COLOR_BLACK);
+      init_pair(3, COLOR_GREEN, COLOR_BLACK);
+      init_pair(4, COLOR_RED, COLOR_BLACK);
+    }
+
+    refresh();
+    tuiv.main_title = VERSION;
+    tuiv.main_title_win = newwin(4, COLS, 1, 0);
+    BOX_WBORDER_ZERO(tuiv.main_title_win);
+
+    wattron(tuiv.main_title_win, COLOR_PAIR(1));
+    mvwprintw(tuiv.main_title_win, 1, (COLS - strlen(tuiv.main_title)) / 2,
+                                      "%s", tuiv.main_title);
+    wattroff(tuiv.main_title_win, COLOR_PAIR(1));
+    wrefresh(tuiv.main_title_win);
+
+    tuiv.sel_lang_title = "Please, select language for text:";
+    attron(COLOR_BOLD(2));
+    mvprintw(7, (COLS - strlen(tuiv.sel_lang_title)) / 2, "%s", tuiv.sel_lang_title);
+    attroff(COLOR_BOLD(2));
+
+    mvprintw(LINES - 2, 4, "%s", HELP_MSG);
+    mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
+
     for (int i = 0; i < 2; i++) {
       if (i == lang_highlight)
         attron(A_UNDERLINE | A_BOLD);
@@ -577,7 +559,7 @@ int main(void)
         exit(EXIT_SUCCESS);
       case ASCII_ENTER:
         clear();
-        get_text();
+        lets_start();
         continue;
     }
   }

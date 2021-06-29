@@ -1,3 +1,9 @@
+v1.1.7
+  * remove setjumps / longjumps / idle code
+  * cancel -> return
+  * memory free in the place of allocation
+  * get length of text, etc.
+
 v1.1.6
   * free memory / correcting mallocs
 

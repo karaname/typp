@@ -31,6 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <time.h>
 #include <math.h>
 #include <errno.h>
+#include <error.h>
 
 size_t newlcount;
 int cg, lang_highlight = 0;
@@ -52,7 +53,7 @@ struct tui_elements {
 #define BOX_WBORDER_ZERO(W) (box(W, 0, 0))
 #define END_CLEAR endwin(); clear();
 #define END_CLEAR_REFRESH endwin(); clear(); refresh();
-#define VERSION "Typing Practice - v1.1.8"
+#define VERSION "Typing Practice - v1.1.9"
 #define QUIT_MSG "F10 Quit"
 #define CANCEL_MSG "F3 Cancel"
 #define HELP_MSG "F1 Help"
@@ -70,25 +71,26 @@ please re-enter the program\n", program_name);
   exit(EXIT_SUCCESS);
 }
 
-void *wrap_malloc(size_t size)
+void error_wrap(const char *s)
+{
+  endwin();
+  error(0, 0, s);
+  exit(EXIT_FAILURE);
+}
+
+void *malloc_wrap(size_t size)
 {
   void *p;
-  if ((p = malloc(size * sizeof(wchar_t))) == NULL) {
-    endwin();
-    perror("typp");
-    exit(EXIT_FAILURE);
-  }
+  if ((p = malloc(size * sizeof(wchar_t))) == NULL)
+    error_wrap("Cannot allocate memory");
   return p;
 }
 
 /* check 80 columns by 24 rows terminal size */
 void term_size_check()
 {
-  if (LINES < 24 || COLS < 80) {
-    endwin();
-    fprintf(stderr, "%s: Please, use terminal size not less 80x24\n", program_name);
-    exit(EXIT_SUCCESS);
-  }
+  if (LINES < 24 || COLS < 80)
+    error_wrap("Please, use terminal size not less 80x24");
 }
 
 void rating_info()
@@ -225,11 +227,8 @@ int wcount, int sec)
     rating = get_cpm_rat(cpm);
   }
 
-  if (rating == NULL) {
-    endwin();
-    fprintf(stderr, "%s: Pointer 'rating' equal NULL \n", program_name);
-    exit(EXIT_FAILURE);
-  }
+  if (rating == NULL)
+    error_wrap("Pointer 'rating' equal NULL");
 
   tuiv.result_win = newwin(20, 35, 1, 1);
   BOX_WBORDER_ZERO(tuiv.result_win);
@@ -266,9 +265,8 @@ int wcount, int sec)
 }
 
 void
-input_text(wchar_t *main_text, WINDOW *text_win)
+input_text(wchar_t *main_text, size_t lent, WINDOW *text_win)
 {
-  wchar_t *pts = main_text;     /* pointer to the beginning of the text (need for counting) */
   wchar_t error_char[2];        /* in case of discrepancy */
   wint_t cuser;                 /* user input character */
   bool err_bool = false;        /* boolean for error counting */
@@ -276,7 +274,7 @@ input_text(wchar_t *main_text, WINDOW *text_win)
   size_t sec, scount;
   size_t xcount = 1, ycount = 1;
   size_t errcount = 0, sscount = 0, wcount = 0;
-  int lent, wc = 0;
+  int wc = 0;
 
   curs_set(1);                  /* set cursor normal station */
   time(&start_t);
@@ -335,20 +333,16 @@ input_text(wchar_t *main_text, WINDOW *text_win)
   }
 
   /* total characters counter, don't count new lines */
-  lent = wcslen(pts);
   scount = lent - (newlcount - 1);
 
-  /* words counter */
   for(int i = 0; i <= lent; i++) {
-    if(isspace(pts[i]) || pts[i] == '\0')
+    /* words counter */
+    if(isspace(main_text[i]) || main_text[i] == '\0')
       wcount++;
-  }
 
-  /* characters counter, without spaces */
-  while (*pts != '\0') {
-    if (!(isspace(*pts)))
+    /* characters counter, without spaces */
+    if (!(isspace(main_text[i])))
       sscount++;
-    pts++;
   }
 
   /* wait enter from user */
@@ -367,17 +361,12 @@ input_text(wchar_t *main_text, WINDOW *text_win)
 }
 
 void
-display_text(wchar_t *main_text, size_t tlen, WINDOW *text_win)
+display_text(wchar_t *main_text, size_t lent, WINDOW *text_win)
 {
   wchar_t *token, *state, *pt;
   size_t text_len = 2048 * sizeof(wchar_t) + 1;
 
-  if ((pt = malloc(text_len)) == NULL) {
-    endwin();
-    perror("typp");
-    exit(EXIT_FAILURE);
-  }
-
+  pt = malloc_wrap(text_len);
   memcpy(pt, main_text, text_len);
 
   token = wcstok(pt, L"\n", &state);
@@ -404,19 +393,12 @@ get_text_and_len(wchar_t *main_text, char *name, int offsets[])
   strcat(fpath, name);
 
   if ((stream = fopen(fpath, "r")) == NULL) {
-    if (errno == ENOENT) {
-      endwin();
-      fprintf(stderr, "%s: %s - %s\n", program_name, strerror(errno), fpath);
-    }
+    if (errno == ENOENT)
+      error_wrap(strerror(errno));
 
-    if (errno == EACCES) {
-      endwin();
-      fprintf(stderr, "%s: %s - %s\n", program_name, strerror(errno), fpath);
-    }
-
-    endwin();
-    fprintf(stderr, "%s: %s\n", program_name, strerror(errno));
-    exit(EXIT_FAILURE);
+    if (errno == EACCES)
+      error_wrap(strerror(errno));
+    error_wrap(strerror(errno));
   }
 
   srand(time(NULL));
@@ -436,7 +418,7 @@ get_text_and_len(wchar_t *main_text, char *name, int offsets[])
 
 void lets_start()
 {
-  size_t tlen;
+  size_t lent;
   wchar_t *main_text;
 
   /* arrays of number bytes where texts started, needed to
@@ -453,11 +435,11 @@ void lets_start()
     5960, 6755, 7509
   };
 
-  main_text = wrap_malloc(2048);
+  main_text = malloc_wrap(2048);
   if (lang_highlight)
-    tlen = get_text_and_len(main_text, "eng.typp", en_offsets);
+    lent = get_text_and_len(main_text, "eng.typp", en_offsets);
   else
-    tlen = get_text_and_len(main_text, "rus.typp", ru_offsets);
+    lent = get_text_and_len(main_text, "rus.typp", ru_offsets);
 
   tuiv.note_msg = "Let's start typing ...";
   tuiv.text_win = newwin(20, 80, (LINES - 21) / 2, (COLS - 80) / 2);
@@ -472,8 +454,8 @@ void lets_start()
   mvprintw(LINES - 2, 4, "%s", CANCEL_MSG);
   mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
 
-  display_text(main_text, tlen, tuiv.text_win);
-  input_text(main_text, tuiv.text_win);
+  display_text(main_text, lent, tuiv.text_win);
+  input_text(main_text, lent, tuiv.text_win);
   free(main_text);
   clear();
 }
@@ -488,7 +470,7 @@ int main(void)
   signal(SIGINT, SIG_IGN);
 
   if (!initscr()) {
-    fprintf(stderr, "%s: Error initialising ncurses\n", program_name);
+    error(0, 0, "Error initialising ncurses");
     exit(EXIT_FAILURE);
   }
 

@@ -53,7 +53,7 @@ struct tui_elements {
 #define BOX_WBORDER_ZERO(W) (box(W, 0, 0))
 #define END_CLEAR endwin(); clear();
 #define END_CLEAR_REFRESH endwin(); clear(); refresh();
-#define VERSION "Typing Practice - v1.1.9"
+#define VERSION "Typing Practice - v1.1.10"
 #define QUIT_MSG "F10 Quit"
 #define CANCEL_MSG "F3 Cancel"
 #define HELP_MSG "F1 Help"
@@ -141,8 +141,8 @@ void help_info()
   mvwaddstr(tuiv.help_win, 1, 1, "This free software, and you are welcome to redistribute in under terms of");
   mvwaddstr(tuiv.help_win, 2, 1, "MIT License. This software is intended for the practice of typing text from");
   mvwaddstr(tuiv.help_win, 3, 1, "the keyboard.");
-  mvwaddstr(tuiv.help_win, 5, 1, "From the available texts 'English' and 'Russian'.");
-  mvwaddstr(tuiv.help_win, 6, 1, "For correct display 'Russian' characters recommended use UTF-8 charset.");
+  mvwaddstr(tuiv.help_win, 5, 1, "From the available texts English and Russian.");
+  mvwaddstr(tuiv.help_win, 6, 1, "For correct display Russian characters recommended use UTF-8 charset.");
   mvwaddstr(tuiv.help_win, 7, 1, "WPM (words per minute) is used to calculate the speed of English texts.");
   mvwaddstr(tuiv.help_win, 8, 1, "CPM (characters per minute) is used to calculate the speed of Russian texts.");
   mvwaddstr(tuiv.help_win, 9, 1, "To type faster, use the touch typing method.");
@@ -199,31 +199,23 @@ char *get_cpm_rat(int cpm)
 
 void
 get_result(int errcount, int scount, int sscount,
-int wcount, int sec)
+int wcount, float sec)
 {
   int m, s, wpm = 0, cpm = 0;
-  char roundtime[20];
   char *rating;
+  float t;
 
+  /* convert */
+  t = sec / 60.0f;
   m = sec / 60;
   s = sec - (m * 60);
 
-  /* time round, for example: 1.50 ~ 2 minutes */
-  if (s >= 30 && s <= 40) {
-    s = 5;
-  } else if (s < 30) {
-    s = 0;
-  } else if (s > 40) {
-    m++; s = 0;
-  }
-  sprintf(roundtime, "%d.%d", m, s);
-
-  /* speed count / get user rating */
+  /* speed count - wpm or cpm / get user rating */
   if (lang_highlight) {
-    wpm = (int)round(((scount / 5) - errcount) / (double)atof(roundtime));
+    wpm = round(((scount / 5) - errcount) / t);
     rating = get_wpm_rat(wpm);
   } else {
-    cpm = (int)round(scount / (double)atof(roundtime));
+    cpm = round(scount / t);
     rating = get_cpm_rat(cpm);
   }
 

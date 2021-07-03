@@ -1,8 +1,6 @@
----- Counting
 --- WPM
 The number of words per minute is used to calculate the speed of English texts
-in this program, the formula is:
-(((characters_count / 5) - errors_count) / time_in_minute)
+in this program, the formula is: ((characters_count / 5) - errors_count) / time_in_minute
 
 This value does not actual for 'Ru' language.
 because the average value of a Russian word is 7.2 characters.
@@ -11,15 +9,7 @@ To counting the input speed in 'Ru' language, it is customary to use 'CPM'.
 
 --- CPM
 The number of characters per minute is used to counting the speed of Russian texts
-in this program, the formula is:
-(characters_count / time_in_minute)
-
-
---- Time
-Time is rounded depending on the seconds:
-less 1.30 ~ 1 minute result
-1.30 ... 1.40 ~ 1.5 minute result
-more 1.40 ~ 2 minute result
+in this program, the formula is: (characters_count / time_in_minute)
 
 
 ---- Rating tags

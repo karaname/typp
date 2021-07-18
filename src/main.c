@@ -36,6 +36,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 size_t newlcount;
 int cg, lang_highlight = 0;
 char *langs[2] = {"Russian", "English"};
+void send_msg_to_server(const char *nickname, int npm, int err, int m, int s);
 
 struct tui_elements {
   WINDOW *main_title_win;
@@ -175,7 +176,7 @@ void help_info()
   }
 }
 
-char *get_wpm_rat(int wpm)
+char *get_wpm_rating(int wpm)
 {
   if (wpm < 24) return "slow";
   if (wpm >= 24 && wpm < 32) return "fine";
@@ -186,7 +187,7 @@ char *get_wpm_rat(int wpm)
   return NULL;
 }
 
-char *get_cpm_rat(int cpm)
+char *get_cpm_rating(int cpm)
 {
   if (cpm < 120) return "slow";
   if (cpm >= 120 && cpm < 160) return "fine";
@@ -201,7 +202,7 @@ void
 get_result(int errcount, int scount, int sscount,
 int wcount, float sec)
 {
-  int m, s, wpm = 0, cpm = 0;
+  int m, s, npm = 0;
   char *rating;
   float t;
 
@@ -212,11 +213,11 @@ int wcount, float sec)
 
   /* speed count - wpm or cpm / get user rating */
   if (lang_highlight) {
-    wpm = round(((scount / 5) - errcount) / t);
-    rating = get_wpm_rat(wpm);
+    npm = round(((scount / 5) - errcount) / t);
+    rating = get_wpm_rating(npm);
   } else {
-    cpm = round(scount / t);
-    rating = get_cpm_rat(cpm);
+    npm = round(scount / t);
+    rating = get_cpm_rating(npm);
   }
 
   if (rating == NULL)
@@ -239,20 +240,27 @@ int wcount, float sec)
   mvwprintw(tuiv.result_win, 8, 2, "Errors: %21d", errcount);
 
   (lang_highlight)
-    ? mvwprintw(tuiv.result_win, 10, 2, "WPM: %24d", wpm)
-    : mvwprintw(tuiv.result_win, 10, 2, "CPM: %24d", cpm);
+    ? mvwprintw(tuiv.result_win, 10, 2, "WPM: %24d", npm)
+    : mvwprintw(tuiv.result_win, 10, 2, "CPM: %24d", npm);
 
   mvwprintw(tuiv.result_win, 12, 2, "Text: %s", langs[lang_highlight]);
   mvwprintw(tuiv.result_win, 13, 2, "Words: %22d", wcount);
   mvwprintw(tuiv.result_win, 14, 2, "Text lines: %17d", newlcount);
   mvwprintw(tuiv.result_win, 15, 2, "Total characters: %11d", scount);
   mvwprintw(tuiv.result_win, 16, 2, "Characters less spaces: %5d", sscount);
-  mvprintw(22, 2, "Press F3 to cancel");
+  attron(A_UNDERLINE | A_STANDOUT);
+  mvprintw(22, 2, "Press Enter to send results");
+  attroff(A_UNDERLINE | A_STANDOUT);
+  mvprintw(23, 2, "Press F3 to cancel");
   wrefresh(tuiv.result_win);
 
   while ((cg = getch())) {
-    if (cg == KEY_F(3))
-      return;
+    switch (cg) {
+      case KEY_F(3):
+        return;
+      case ASCII_ENTER:
+        send_msg_to_server("Kirill", npm, errcount, m, s);
+    }
   }
 }
 

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT(typp, v1.1.12, rekhov.ka@gmail.com)
+AC_INIT(typp, v1.2.13, rekhov.ka@gmail.com)
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 
@@ -12,6 +12,7 @@ AM_INIT_AUTOMAKE([subdir-objects])
 
 # Checks for libraries.
 PKG_CHECK_MODULES([ncursesw], [ncursesw])
+PKG_CHECK_MODULES([form], [form])
 AC_CHECK_LIB([ncurses], [initscr])
 AC_CHECK_LIB([m], [round])
 

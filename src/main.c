@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <ncurses.h>
+#include <form.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +37,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 size_t newlcount;
 int cg, lang_highlight = 0;
 char *langs[2] = {"Russian", "English"};
-void send_msg_to_server(const char *nickname, int npm, int err, int m, int s);
+bool send_res_to_server(int ln, const char *nickname,
+     int npm, int err, int m, int s);
 
 struct tui_elements {
   WINDOW *main_title_win;
@@ -44,22 +46,45 @@ struct tui_elements {
   WINDOW *text_win;
   WINDOW *help_win;
   WINDOW *rating_win;
-  char *main_title;
-  char *sel_lang_title;
-  char *note_msg;
+  FIELD *field[2];
+  FORM *form;
+  const char *main_title;
+  const char *sel_lang_title;
+  const char *note_msg;
+  const char *nick_msg;
 } tuiv;
 
-#define program_name "typp"
 #define COLOR_BOLD(N) (COLOR_PAIR(N) | A_BOLD)
 #define BOX_WBORDER_ZERO(W) (box(W, 0, 0))
+
 #define END_CLEAR endwin(); clear();
 #define END_CLEAR_REFRESH endwin(); clear(); refresh();
-#define VERSION "Typing Practice - v1.1.12"
+#define FOOTER_MSGS \
+  mvprintw(LINES - 2, 4, "%s", CANCEL_MSG); \
+  mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
+
+#define case_EXIT \
+  case KEY_F(10): \
+    endwin(); \
+    exit(EXIT_SUCCESS);
+
+#define case_CLEAR_CANCEL \
+  case KEY_F(3): \
+    clear(); \
+    return;
+
+#define case_CANCEL \
+  case KEY_F(3): \
+    return;
+
+#define program_name "typp"
+#define VERSION "Typing Practice - v1.2.13"
 #define QUIT_MSG "F10 Quit"
 #define CANCEL_MSG "F3 Cancel"
 #define HELP_MSG "F1 Help"
 #define ASCII_ENTER 10
 #define ASCII_SPACE 32
+#define ASCII_DEL 127
 
 /* If the user changed the terminal, the program will exit
    The user should re-enter it to update the LINES / COLS values
@@ -98,7 +123,6 @@ void rating_info()
 {
   tuiv.rating_win = newwin(22, 80, (LINES - 24) / 2, (COLS - 80) / 2);
   BOX_WBORDER_ZERO(tuiv.rating_win);
-
   mvwaddstr(tuiv.rating_win, 0, (80 - strlen("Help")) / 2, "Help");
   mvwaddstr(tuiv.rating_win, 1, 1, "WPM rating:");
   mvwaddstr(tuiv.rating_win, 2, 2, "less 24 (slow)");
@@ -115,18 +139,12 @@ void rating_info()
   mvwaddstr(tuiv.rating_win, 15, 2, "more or equal 350 and less or equal 400 (pro)");
   mvwaddstr(tuiv.rating_win, 16, 2, "more 400 (best)");
   wrefresh(tuiv.rating_win);
-
-  mvprintw(LINES - 2, 4, "%s", CANCEL_MSG);
-  mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
+  FOOTER_MSGS;
 
   while ((cg = getch())) {
     switch (cg) {
-      case KEY_F(10):
-        endwin();
-        exit(EXIT_SUCCESS);
-      case KEY_F(3):
-        clear();
-        return;
+      case_EXIT;
+      case_CLEAR_CANCEL;
     }
   }
 }
@@ -136,7 +154,6 @@ void help_info()
 
   tuiv.help_win = newwin(22, 80, (LINES - 24) / 2, (COLS - 80) / 2);
   BOX_WBORDER_ZERO(tuiv.help_win);
-
   refresh();
   mvwaddstr(tuiv.help_win, 0, (80 - strlen("Help")) / 2, "Help");
   mvwaddstr(tuiv.help_win, 1, 1, "This free software, and you are welcome to redistribute in under terms of");
@@ -156,24 +173,106 @@ void help_info()
   wattroff(tuiv.help_win, A_UNDERLINE | A_STANDOUT);
   mvwaddstr(tuiv.help_win, 19, 1, VERSION);
   mvwaddstr(tuiv.help_win, 20, 1, "Typing Practice written by Kirill Rekhov <rekhov.ka@gmail.com>");
-  mvprintw(LINES - 2, 4, "%s", CANCEL_MSG);
-  mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
+  FOOTER_MSGS;
   wrefresh(tuiv.help_win);
 
   while ((cg = getch())) {
     switch (cg) {
-      case KEY_F(10):
-        endwin();
-        exit(EXIT_SUCCESS);
-      case KEY_F(3):
-        clear();
-        return;
+      case_EXIT;
+      case_CLEAR_CANCEL;
       case ASCII_ENTER:
         delwin(tuiv.help_win);
         rating_info();
         return;
     }
   }
+}
+
+char *trim_whitespaces(char *str)
+{
+  char *end;
+
+  /* trim leading space */
+  while(isspace(*str))
+    str++;
+
+  /* all spaces? */
+  if(*str == 0)
+    return str;
+
+  /* trim trailing space */
+  end = str + strnlen(str, 128) - 1;
+
+  while(end > str && isspace(*end))
+    end--;
+
+  /* write new null terminator */
+  *(end+1) = '\0';
+
+  return str;
+}
+
+char *get_user_nickname()
+{
+  char *strnick;
+  int ch;
+
+  /* Initialize the fields */
+  tuiv.field[0] = new_field(1, 25, 15, (COLS - 25) / 2, 0, 0);
+  tuiv.field[1] = NULL;
+
+  /* Set field options */
+  set_field_back(tuiv.field[0], A_UNDERLINE); /* Print a line for the option   */
+  field_opts_off(tuiv.field[0], O_AUTOSKIP); /* Don't go to next field when this */
+
+  /* Create the form and post it */
+  curs_set(1);
+  tuiv.form = new_form(tuiv.field);
+  post_form(tuiv.form);
+  refresh();
+
+  attron(COLOR_PAIR(1));
+  tuiv.nick_msg = "Write your nickname, use ASCII characters and press Enter.";
+  mvprintw(12, (COLS - strlen(tuiv.nick_msg)) / 2, tuiv.nick_msg);
+  tuiv.nick_msg = "After submitting your result will be in the pivot table.";
+  mvprintw(13, (COLS - strlen(tuiv.nick_msg)) / 2, tuiv.nick_msg);
+  attroff(COLOR_PAIR(1));
+  FOOTER_MSGS;
+  pos_form_cursor(tuiv.form);
+
+  while ((ch = getch())) {
+    switch (ch) {
+      case KEY_BACKSPACE:
+      case ASCII_DEL:
+        form_driver(tuiv.form, REQ_DEL_PREV);
+        break;
+
+      case ASCII_ENTER:
+        curs_set(0);
+        form_driver(tuiv.form, REQ_NEXT_FIELD);
+        form_driver(tuiv.form, REQ_PREV_FIELD);
+        strnick = trim_whitespaces(field_buffer(tuiv.field[0], 0));
+        if (strnick[0] == '\0') {
+          return NULL;
+        } else {
+          unpost_form(tuiv.form);
+          free_form(tuiv.form);
+          return strnick;
+        }
+
+      case_EXIT;
+
+      case KEY_F(3):
+        return NULL;
+
+      default:
+        if (isprint(ch) && (!(isspace(ch))))
+          form_driver(tuiv.form, ch);
+        break;
+    }
+  }
+
+  return NULL;
 }
 
 char *get_wpm_rating(int wpm)
@@ -202,8 +301,9 @@ void
 get_result(int errcount, int scount, int sscount,
 int wcount, float sec)
 {
+  char *rating, *nickname;
   int m, s, npm = 0;
-  char *rating;
+  bool srval;
   float t;
 
   /* convert */
@@ -249,17 +349,26 @@ int wcount, float sec)
   mvwprintw(tuiv.result_win, 15, 2, "Total characters: %11d", scount);
   mvwprintw(tuiv.result_win, 16, 2, "Characters less spaces: %5d", sscount);
   attron(A_UNDERLINE | A_STANDOUT);
-  mvprintw(22, 2, "Press Enter to send results");
+  mvprintw(21, 2, "Press Enter to share result");
   attroff(A_UNDERLINE | A_STANDOUT);
-  mvprintw(23, 2, "Press F3 to cancel");
+  mvprintw(22, 2, "Press F3 to cancel");
   wrefresh(tuiv.result_win);
 
   while ((cg = getch())) {
     switch (cg) {
-      case KEY_F(3):
-        return;
+      case_CANCEL;
       case ASCII_ENTER:
-        send_msg_to_server("Kirill", npm, errcount, m, s);
+        nickname = get_user_nickname();
+        if (nickname != NULL) {
+          srval = send_res_to_server(lang_highlight, nickname, npm, errcount, m, s);
+          if (srval)
+            mvprintw(0, 0, "%s - your result was sent successfully.", nickname);
+          else
+            mvprintw(0, 0, "Sorry, server not respond, please try later.");
+          mvprintw(1, 0, "Press any key...");
+          getch();
+        }
+        return;
     }
   }
 }
@@ -288,11 +397,8 @@ input_text(wchar_t *main_text, size_t lent, WINDOW *text_win)
       time(&start_t);
 
     switch (cuser) {
-      case KEY_F(10):
-        endwin();
-        exit(EXIT_SUCCESS);
-      case KEY_F(3):
-        return;
+      case_EXIT;
+      case_CANCEL;
       default:
         if (main_text[wc] == cuser) {
           xcount++;
@@ -391,7 +497,6 @@ get_text_and_len(wchar_t *main_text, char *name, int offsets[])
   char fpath[32] = "/usr/local/share/typp/";
 
   strcat(fpath, name);
-
   if ((stream = fopen(fpath, "r")) == NULL) {
     if (errno == ENOENT)
       error_wrap(strerror(errno));
@@ -441,7 +546,7 @@ void lets_start()
   else
     lent = get_text_and_len(main_text, "rus.typp", ru_offsets);
 
-  tuiv.note_msg = "Let's start typing ...";
+  tuiv.note_msg = "Let's start typing...";
   tuiv.text_win = newwin(20, 80, (LINES - 21) / 2, (COLS - 80) / 2);
   BOX_WBORDER_ZERO(tuiv.text_win);
   keypad(tuiv.text_win, TRUE);
@@ -450,9 +555,7 @@ void lets_start()
   mvprintw((LINES - 24) / 2, (COLS - strlen(tuiv.note_msg)) / 2,
            "%s", tuiv.note_msg);
   attroff(COLOR_PAIR(1));
-
-  mvprintw(LINES - 2, 4, "%s", CANCEL_MSG);
-  mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
+  FOOTER_MSGS;
 
   display_text(main_text, lent, tuiv.text_win);
   input_text(main_text, lent, tuiv.text_win);
@@ -510,7 +613,6 @@ int main(void)
     for (int i = 0; i < 2; i++) {
       if (i == lang_highlight)
         attron(A_UNDERLINE | A_BOLD);
-
       mvprintw(i + 9, (COLS - 7) / 2, "%s", langs[i]);
       attroff(A_UNDERLINE | A_BOLD);
     }
@@ -530,9 +632,7 @@ int main(void)
         clear();
         help_info();
         break;
-      case KEY_F(10):
-        endwin();
-        exit(EXIT_SUCCESS);
+      case_EXIT;
       case ASCII_ENTER:
         clear();
         lets_start();

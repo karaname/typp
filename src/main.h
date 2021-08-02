@@ -9,6 +9,9 @@ struct tui_elements {
   WINDOW *text_win;
   WINDOW *help_win;
   WINDOW *rating_win;
+  WINDOW *menu_win;
+  MENU *menu;
+  ITEM **items;
   FIELD *field[2];
   FORM *form;
   const char *main_title;
@@ -16,6 +19,7 @@ struct tui_elements {
   const char *sel_unit_title;
   const char *note_msg;
   const char *nick_msg;
+  const char *menu_footer_msg;
 } tuiv;
 
 #define COLOR_BOLD(N) (COLOR_PAIR(N) | A_BOLD)

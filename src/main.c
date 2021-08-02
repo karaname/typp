@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <ncurses.h>
 #include <form.h>
+#include <menu.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,14 +98,16 @@ void help_info()
   mvwaddstr(tuiv.help_win, 6, 1, "For correct display Russian characters recommended use UTF-8 charset.");
   mvwaddstr(tuiv.help_win, 7, 1, "WPM (words per minute) is used to calculate the speed of English texts.");
   mvwaddstr(tuiv.help_win, 8, 1, "CPM (characters per minute) is used to calculate the speed of Russian texts.");
-  mvwaddstr(tuiv.help_win, 9, 1, "To type faster, use the touch typing method.");
-  mvwaddstr(tuiv.help_win, 11, 1, "You can use the keys of keyboard to navigate (up / down).");
-  mvwaddstr(tuiv.help_win, 12, 1, "It is recommended to use a terminal size of at least 80x24.");
-  mvwaddstr(tuiv.help_win, 14, 1, "After entering the text, the results will appear, along with the rating.");
+  mvwaddstr(tuiv.help_win, 10, 1, "You can use the keys of keyboard to navigate ('Up' / 'Down') in menus.");
+  mvwaddstr(tuiv.help_win, 11, 1, "It is recommended to use a terminal size of at least 80x24.");
+  mvwaddstr(tuiv.help_win, 13, 1, "The countdown time starts from the first entered character.");
+  mvwaddstr(tuiv.help_win, 14, 1, "After full entering the text, the results will appear, along with the rating.");
   mvwaddstr(tuiv.help_win, 15, 1, "To see the description of ratings, press");
   wattron(tuiv.help_win, A_UNDERLINE | A_STANDOUT);
   mvwaddstr(tuiv.help_win, 15, 42, "Enter");
   wattroff(tuiv.help_win, A_UNDERLINE | A_STANDOUT);
+  mvwaddstr(tuiv.help_win, 16, 1, "You can send your results after full entering text to compete.");
+  mvwaddstr(tuiv.help_win, 17, 1, "Press 'F5' in main menu to see results other users.");
   mvwaddstr(tuiv.help_win, 19, 1, VERSION);
   mvwaddstr(tuiv.help_win, 20, 1, "Typing Practice written by Kirill Rekhov <rekhov.ka@gmail.com>");
   FOOTER_MSGS;
@@ -148,14 +151,102 @@ int connect_to_server()
   return sock;
 }
 
+void version_header_box()
+{
+  refresh();
+  tuiv.main_title = VERSION;
+  tuiv.main_title_win = newwin(4, COLS, 1, 0);
+  BOX_WBORDER_ZERO(tuiv.main_title_win);
+
+  wattron(tuiv.main_title_win, COLOR_PAIR(1));
+  mvwprintw(tuiv.main_title_win, 1, (COLS - strlen(tuiv.main_title)) / 2,
+            "%s", tuiv.main_title);
+  wattroff(tuiv.main_title_win, COLOR_PAIR(1));
+  wrefresh(tuiv.main_title_win);
+}
+
+void display_all_results(char **lines_res, int n_lines)
+{
+  int ch, i;
+
+  /* Create items */
+  tuiv.items = (ITEM **)calloc(n_lines, sizeof(ITEM *));
+  for(i = 0; i < n_lines; ++i)
+    tuiv.items[i] = new_item(lines_res[i], NULL);
+
+  /* Crate menu and window */
+  tuiv.menu = new_menu((ITEM **)tuiv.items);
+  tuiv.menu_win = newwin(21, 80, (LINES - 24) / 2, (COLS - 80) / 2);
+
+  /* Set main window and sub window */
+  set_menu_win(tuiv.menu, tuiv.menu_win);
+  set_menu_sub(tuiv.menu, derwin(tuiv.menu_win, 10, 79, 3, 1));
+  set_menu_format(tuiv.menu, 10, 1);
+  set_menu_mark(tuiv.menu, " ");
+
+  BOX_WBORDER_ZERO(tuiv.menu_win);
+  keypad(tuiv.menu_win, TRUE);
+
+  /* Header line */
+  mvwaddch(tuiv.menu_win, 2, 0, ACS_LTEE);
+  mvwhline(tuiv.menu_win, 2, 1, ACS_HLINE, 78);
+  mvwaddch(tuiv.menu_win, 2, 79, ACS_RTEE);
+
+  version_header_box();
+  post_menu(tuiv.menu);
+  FOOTER_MSGS;
+  refresh();
+
+  mvwprintw(tuiv.menu_win, 1, (80 - strlen("Top Results Table")) / 2,
+            "%s", "Top Results Table");
+
+  tuiv.menu_footer_msg = "Use 'Up' or 'PgUp' and 'Down' or 'PgDn' \
+to scroll down or up a page of items";
+  mvwprintw(tuiv.menu_win, 19, 2, "%s", tuiv.menu_footer_msg);
+
+
+  while((ch = wgetch(tuiv.menu_win))) {
+    switch(ch) {
+      case KEY_DOWN:
+        menu_driver(tuiv.menu, REQ_DOWN_ITEM);
+        break;
+      case KEY_UP:
+        menu_driver(tuiv.menu, REQ_UP_ITEM);
+        break;
+      case KEY_NPAGE:
+        menu_driver(tuiv.menu, REQ_SCR_DPAGE);
+        break;
+      case KEY_PPAGE:
+        menu_driver(tuiv.menu, REQ_SCR_UPAGE);
+        break;
+
+      case_EXIT;
+
+      case KEY_F(3):
+        unpost_menu(tuiv.menu);
+        free_menu(tuiv.menu);
+        for(i = 0; i < n_lines; ++i)
+          free_item(tuiv.items[i]);
+        clear();
+        return;
+    }
+    wrefresh(tuiv.menu_win);
+  }
+}
+
 void get_results_from_server(char *upper_npm)
 {
-  /* all_results - размер массива ??? */
-  char cpm_or_wpm[4], all_results[2048];
-  int client_sock, len_res;
+  char all_results[BUFSIZ];
+  char results_format[BUFSIZ + 1024];
+  char *token;
+  char tmp_buf[32];
+  char cpm_or_wpm[3];
+  char *lines_res[1024];
+  int client_sock, len_res, i;
 
-  for (int i = 0; upper_npm[i] != '\0'; i++)
+  for (i = 0; upper_npm[i] != '\0'; i++)
     cpm_or_wpm[i] = tolower(upper_npm[i]);
+  cpm_or_wpm[i] = '\0';
 
   if ((client_sock = connect_to_server()) == -1) {
     close(client_sock);
@@ -170,11 +261,35 @@ void get_results_from_server(char *upper_npm)
     endwin_error_wrap("recv() returned negative value", __LINE__);
   close(client_sock);
 
-  for (int i = 0; i < len_res; i++) {
-    printw("%c", all_results[i]);
+  /* format results, indents */
+  token = strtok(all_results, " \n");
+  while (token != NULL) {
+    if (isalpha(token[0])) {
+      sprintf(tmp_buf, "%-19s", token);
+      strcat(results_format, tmp_buf);
+    } else {
+      if (strrchr(token, ':')) {
+        sprintf(tmp_buf, "%10s\n", token);
+        strcat(results_format, tmp_buf);
+      } else {
+        sprintf(tmp_buf, "%7s", token);
+        strcat(results_format, tmp_buf);
+      }
+    }
+    token = strtok(NULL, " \n");
   }
 
-  getch();
+  /* fill array of pointers to strings */
+  token = strtok(results_format, "\n");
+  for (i = 0; token != NULL; i++) {
+    lines_res[i] = token;
+    token = strtok(NULL, "\n");
+  }
+
+  display_all_results(lines_res, sizeof(lines_res) / sizeof(lines_res[0]));
+  memset(results_format, 0, sizeof results_format);
+  memset(all_results, 0, sizeof all_results);
+  memset(tmp_buf, 0, sizeof tmp_buf);
   clear();
 }
 
@@ -189,7 +304,7 @@ send_res_to_server(int sock, int ln, const char *nickname,
   close(sock);
 }
 
-void print_menu(char *elements[], int highlight)
+void menu_of_two_elements(char *elements[], int highlight)
 {
   for (int i = 0; i < 2; i++) {
     if (i == highlight)
@@ -197,20 +312,6 @@ void print_menu(char *elements[], int highlight)
     mvprintw(i + 9, (COLS - 7) / 2, "%s", elements[i]);
     attroff(A_UNDERLINE | A_BOLD);
   }
-}
-
-void version_header_box()
-{
-  refresh();
-  tuiv.main_title = VERSION;
-  tuiv.main_title_win = newwin(4, COLS, 1, 0);
-  BOX_WBORDER_ZERO(tuiv.main_title_win);
-
-  wattron(tuiv.main_title_win, COLOR_PAIR(1));
-  mvwprintw(tuiv.main_title_win, 1, (COLS - strlen(tuiv.main_title)) / 2,
-      "%s", tuiv.main_title);
-  wattroff(tuiv.main_title_win, COLOR_PAIR(1));
-  wrefresh(tuiv.main_title_win);
 }
 
 void npm_menu()
@@ -223,7 +324,7 @@ void npm_menu()
     FOOTER_MSGS;
 
     version_header_box();
-    print_menu(npms, npm_highlight);
+    menu_of_two_elements(npms, npm_highlight);
 
     switch (getch()) {
       case KEY_UP:
@@ -424,6 +525,7 @@ display_result(int errcount, int scount, int sscount,
         send_res_to_server(client_sock, lang_highlight, nickname, npm, errcount, m, s);
         mvprintw(0, 0, "%s - your result was sent successfully.", nickname);
         mvprintw(1, 0, "Press any key...");
+        free(nickname);
         getch();
         return;
     }
@@ -667,7 +769,7 @@ int main(void)
     mvprintw(LINES - 2, (COLS - strlen(RES_MSG)) / 2, "%s", RES_MSG);
     mvprintw(LINES - 2, (COLS - strlen(QUIT_MSG)) - 4, "%s", QUIT_MSG);
 
-    print_menu(langs, lang_highlight);
+    menu_of_two_elements(langs, lang_highlight);
     switch (getch()) {
       case KEY_UP:
         lang_highlight--;

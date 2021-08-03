@@ -1,3 +1,8 @@
+v1.3.16
+  * work with displaying results of other users
+  * tui and menu corrections
+  * fix segfault
+
 v1.3.15
   * fix form (get_user_nickname)
   * correct wrap malloc

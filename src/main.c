@@ -106,8 +106,8 @@ void help_info()
   wattron(tuiv.help_win, A_UNDERLINE | A_STANDOUT);
   mvwaddstr(tuiv.help_win, 15, 42, "Enter");
   wattroff(tuiv.help_win, A_UNDERLINE | A_STANDOUT);
-  mvwaddstr(tuiv.help_win, 16, 1, "You can send your results after full entering text to compete.");
-  mvwaddstr(tuiv.help_win, 17, 1, "Press 'F5' in main menu to see results other users.");
+  mvwaddstr(tuiv.help_win, 16, 1, "You can share your result after full entering text to compete.");
+  mvwaddstr(tuiv.help_win, 17, 1, "Press 'F5' in the main menu to see shared results in pivot table.");
   mvwaddstr(tuiv.help_win, 19, 1, VERSION);
   mvwaddstr(tuiv.help_win, 20, 1, "Typing Practice written by Kirill Rekhov <rekhov.ka@gmail.com>");
   FOOTER_MSGS;
@@ -130,17 +130,17 @@ int connect_to_server()
   struct sockaddr_in servaddr;
   int sock;
 
-  /* Create client socket */
+  /* create client socket */
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     endwin_error_wrap("socket() returned negative value", __LINE__);
   memset(&servaddr, 0, sizeof(servaddr));
 
-  /* Assign IP, PORT */
+  /* assign IP, PORT */
   servaddr.sin_family = AF_INET;
   servaddr.sin_addr.s_addr = inet_addr("5.63.158.181");
   servaddr.sin_port = htons(8012);
 
-  /* Connect the client socket to server socket */
+  /* connect the client socket to server socket */
   if (connect(sock, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
     mvprintw(0, 0, "Sorry, server not respond, please try later.");
     mvprintw(1, 0, "Press any key...");
@@ -159,51 +159,63 @@ void version_header_box()
   BOX_WBORDER_ZERO(tuiv.main_title_win);
 
   wattron(tuiv.main_title_win, COLOR_PAIR(1));
-  mvwprintw(tuiv.main_title_win, 1, (COLS - strlen(tuiv.main_title)) / 2,
-            "%s", tuiv.main_title);
+  mvwprintw(tuiv.main_title_win, 1, (COLS - strlen(tuiv.main_title)) / 2, "%s", tuiv.main_title);
   wattroff(tuiv.main_title_win, COLOR_PAIR(1));
   wrefresh(tuiv.main_title_win);
 }
 
 void display_all_results(char **lines_res, int n_lines)
 {
+  char *table_titles[4] = {"Nickname", NULL, "Errors", "Time"};
   int ch, i;
 
-  /* Create items */
+  /* create items */
   tuiv.items = (ITEM **)calloc(n_lines, sizeof(ITEM *));
-  for(i = 0; i < n_lines; ++i)
+  for (i = 0; i < n_lines; i++)
     tuiv.items[i] = new_item(lines_res[i], NULL);
 
-  /* Crate menu and window */
+  /* create menu and window */
   tuiv.menu = new_menu((ITEM **)tuiv.items);
   tuiv.menu_win = newwin(21, 80, (LINES - 24) / 2, (COLS - 80) / 2);
 
-  /* Set main window and sub window */
+  /* set main window and sub window */
   set_menu_win(tuiv.menu, tuiv.menu_win);
-  set_menu_sub(tuiv.menu, derwin(tuiv.menu_win, 10, 79, 3, 1));
-  set_menu_format(tuiv.menu, 10, 1);
+  set_menu_sub(tuiv.menu, derwin(tuiv.menu_win, 5, 79, 5, 1));
+  set_menu_format(tuiv.menu, 5, 1);
   set_menu_mark(tuiv.menu, " ");
 
   BOX_WBORDER_ZERO(tuiv.menu_win);
   keypad(tuiv.menu_win, TRUE);
 
-  /* Header line */
+  /* header line */
   mvwaddch(tuiv.menu_win, 2, 0, ACS_LTEE);
+  mvwaddch(tuiv.menu_win, 4, 0, ACS_LTEE);
+
   mvwhline(tuiv.menu_win, 2, 1, ACS_HLINE, 78);
+  mvwhline(tuiv.menu_win, 4, 1, ACS_HLINE, 78);
   mvwaddch(tuiv.menu_win, 2, 79, ACS_RTEE);
+  mvwaddch(tuiv.menu_win, 4, 79, ACS_RTEE);
 
-  version_header_box();
   post_menu(tuiv.menu);
+  version_header_box();
   FOOTER_MSGS;
+
+  if (npm_highlight)
+    table_titles[1] = "WPM";
+  else
+    table_titles[1] = "CPM";
+
+  wattron(tuiv.menu_win, COLOR_BOLD(2));
+  mvwprintw(tuiv.menu_win, 1, (80 - strlen("Top Results Table")) / 2, "%s", "Top Results Table");
+  wattroff(tuiv.menu_win, COLOR_BOLD(2));
+
+  wattron(tuiv.menu_win, A_BOLD);
+  mvwprintw(tuiv.menu_win, 3, 2, "%-22s%s%9s%7s", table_titles[0], table_titles[1], table_titles[2], table_titles[3]);
+  wattroff(tuiv.menu_win, A_BOLD);
+
+  tuiv.menu_footer_msg = "Use 'Up' or 'PgUp' and 'Down' or 'PgDn' to scroll down or up a page of items.";
+  mvwprintw(tuiv.menu_win, 19, 2, "%s", tuiv.menu_footer_msg);;
   refresh();
-
-  mvwprintw(tuiv.menu_win, 1, (80 - strlen("Top Results Table")) / 2,
-            "%s", "Top Results Table");
-
-  tuiv.menu_footer_msg = "Use 'Up' or 'PgUp' and 'Down' or 'PgDn' \
-to scroll down or up a page of items";
-  mvwprintw(tuiv.menu_win, 19, 2, "%s", tuiv.menu_footer_msg);
-
 
   while((ch = wgetch(tuiv.menu_win))) {
     switch(ch) {
@@ -225,7 +237,7 @@ to scroll down or up a page of items";
       case KEY_F(3):
         unpost_menu(tuiv.menu);
         free_menu(tuiv.menu);
-        for(i = 0; i < n_lines; ++i)
+        for (i = 0; i < n_lines; ++i)
           free_item(tuiv.items[i]);
         clear();
         return;
@@ -269,10 +281,10 @@ void get_results_from_server(char *upper_npm)
       strcat(results_format, tmp_buf);
     } else {
       if (strrchr(token, ':')) {
-        sprintf(tmp_buf, "%10s\n", token);
+        sprintf(tmp_buf, "%11s\n", token);
         strcat(results_format, tmp_buf);
       } else {
-        sprintf(tmp_buf, "%7s", token);
+        sprintf(tmp_buf, "%6s", token);
         strcat(results_format, tmp_buf);
       }
     }
@@ -286,10 +298,10 @@ void get_results_from_server(char *upper_npm)
     token = strtok(NULL, "\n");
   }
 
-  display_all_results(lines_res, sizeof(lines_res) / sizeof(lines_res[0]));
-  memset(results_format, 0, sizeof results_format);
-  memset(all_results, 0, sizeof all_results);
-  memset(tmp_buf, 0, sizeof tmp_buf);
+  display_all_results(lines_res, i + 1);
+  memset(results_format, 0, sizeof(results_format));
+  memset(all_results, 0, sizeof(all_results));
+  memset(tmp_buf, 0, sizeof(tmp_buf));
   clear();
 }
 
@@ -371,29 +383,29 @@ char *trim_whitespaces(char *str)
   return str;
 }
 
-void get_user_nickname(char *nickname)
+bool get_user_nickname(char *nickname)
 {
   int ch;
 
-  /* Initialize the fields */
-  tuiv.field[0] = new_field(1, NICKNAME_LEN, 15, (COLS - NICKNAME_LEN) / 2, 0, 0);
+  /* initialize the fields */
+  tuiv.field[0] = new_field(1, NICKNAME_LEN, 10, (COLS - NICKNAME_LEN) / 2, 0, 0);
   tuiv.field[1] = NULL;
 
-  /* Set field options */
-  set_field_back(tuiv.field[0], A_UNDERLINE); /* Print a line for the option   */
-  field_opts_off(tuiv.field[0], O_AUTOSKIP); /* Don't go to next field when this */
+  /* set field options */
+  set_field_back(tuiv.field[0], A_UNDERLINE); /* print a line for the option   */
+  field_opts_off(tuiv.field[0], O_AUTOSKIP); /* don't go to next field when this */
 
-  /* Create the form and post it */
+  /* create the form and post it */
   curs_set(1);
   tuiv.form = new_form(tuiv.field);
   post_form(tuiv.form);
   refresh();
 
   attron(COLOR_PAIR(1));
-  tuiv.nick_msg = "Write your nickname, use ASCII characters and press Enter.";
-  mvprintw(12, (COLS - strlen(tuiv.nick_msg)) / 2, tuiv.nick_msg);
-  tuiv.nick_msg = "After submitting your result will be in the pivot table.";
-  mvprintw(13, (COLS - strlen(tuiv.nick_msg)) / 2, tuiv.nick_msg);
+  tuiv.nick_msg = "Write your nickname, use alphabetic characters and press Enter.";
+  mvprintw(7, (COLS - strlen(tuiv.nick_msg)) / 2, tuiv.nick_msg);
+  tuiv.nick_msg = "After submitting your result will be in the 'Results Table'.";
+  mvprintw(8, (COLS - strlen(tuiv.nick_msg)) / 2, tuiv.nick_msg);
   attroff(COLOR_PAIR(1));
   FOOTER_MSGS;
   pos_form_cursor(tuiv.form);
@@ -410,27 +422,30 @@ void get_user_nickname(char *nickname)
         form_driver(tuiv.form, REQ_NEXT_FIELD);
         form_driver(tuiv.form, REQ_PREV_FIELD);
         strcpy(nickname, trim_whitespaces(field_buffer(tuiv.field[0], 0)));
-        if (nickname[0] == '\0') {
+        if (nickname[0] == '\0' || isdigit(nickname[0])) {
           curs_set(1);
-          mvprintw(0, 0, "Please, input your nickname");
+          mvprintw(0, 0, "Please, input your nickname.");
           pos_form_cursor(tuiv.form);
           continue;
         } else {
           unpost_form(tuiv.form);
           free_form(tuiv.form);
           free_field(tuiv.field[0]);
-          return;
+          return true;
         }
 
       case_EXIT;
-      case_CANCEL;
+      case KEY_F(3):
+        return false;
 
       default:
-        if (isprint(ch) && (!(isspace(ch))))
+        if (isalpha(ch))
           form_driver(tuiv.form, ch);
         break;
     }
   }
+
+  return false;
 }
 
 char *get_wpm_rating(int wpm)
@@ -516,17 +531,19 @@ display_result(int errcount, int scount, int sscount,
       case_CANCEL;
       case ASCII_ENTER:
         nickname = malloc_wrap(NICKNAME_LEN, sizeof(char));
-        get_user_nickname(nickname);
-        if ((client_sock = connect_to_server()) == -1) {
-          close(client_sock);
-          clear();
-          return;
+        if (get_user_nickname(nickname)) {
+          if ((client_sock = connect_to_server()) == -1) {
+            close(client_sock);
+            clear();
+            return;
+          }
+          send_res_to_server(client_sock, lang_highlight, nickname, npm, errcount, m, s);
+          mvprintw(0, 0, "%s - data sent successfully.", nickname);
+          mvprintw(1, 0, "Your result will be displayed in the 'Results Table' along with your nickname.");
+          mvprintw(2, 0, "Press any key...");
+          free(nickname);
+          getch();
         }
-        send_res_to_server(client_sock, lang_highlight, nickname, npm, errcount, m, s);
-        mvprintw(0, 0, "%s - your result was sent successfully.", nickname);
-        mvprintw(1, 0, "Press any key...");
-        free(nickname);
-        getch();
         return;
     }
   }
@@ -578,7 +595,6 @@ input_text(wchar_t *main_text, size_t lent, WINDOW *text_win)
             wc++;
             xcount = 1;
             ycount++;
-
             if (cuser == ASCII_SPACE)
               continue;
           }
@@ -601,7 +617,7 @@ input_text(wchar_t *main_text, size_t lent, WINDOW *text_win)
   /* total characters counter, don't count new lines */
   scount = lent - (newlcount - 1);
 
-  for(int i = 0; i <= lent; i++) {
+  for (int i = 0; i <= lent; i++) {
     /* words counter */
     if(isspace(main_text[i]) || main_text[i] == '\0')
       wcount++;
@@ -705,8 +721,7 @@ void lets_start_type()
   keypad(tuiv.text_win, TRUE);
 
   attron(COLOR_PAIR(1));
-  mvprintw((LINES - 24) / 2, (COLS - strlen(tuiv.note_msg)) / 2,
-           "%s", tuiv.note_msg);
+  mvprintw((LINES - 24) / 2, (COLS - strlen(tuiv.note_msg)) / 2, "%s", tuiv.note_msg);
   attroff(COLOR_PAIR(1));
   FOOTER_MSGS;
 
@@ -759,7 +774,6 @@ int main(void)
     }
 
     version_header_box();
-
     tuiv.sel_lang_title = "Please, select language for text:";
     attron(COLOR_BOLD(2));
     mvprintw(7, (COLS - strlen(tuiv.sel_lang_title)) / 2, "%s", tuiv.sel_lang_title);

@@ -1,5 +1,5 @@
 --- Requires Installation:
-* ncursesw development library (For example on Ubuntu: sudo apt install libncursesw5-dev)
+* ncursesw (development library)
 * pkg-config
 * automake
 * autoconf
@@ -21,3 +21,6 @@ autoreconf -iv && ./configure && sudo make install
 /usr/local/share/typp/eng.typp
 /usr/local/share/typp/rus.typp
 /usr/local/man/man6/typp.6
+
+--- Platform
+The project was tested only on Linux Manjaro Xfce 5.10.42-1-MANJARO x86_64

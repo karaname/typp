@@ -1,7 +1,8 @@
 ## typp
 This software is intended for the practice of typing text from the keyboard.<br/>
 From the available texts <strong>English</strong> and <strong>Russian</strong>.<br/>
-For correct display <strong>Russian</strong> characters recommended use <strong>UTF-8 charset.</strong>
+For correct display <strong>Russian</strong> characters recommended use <strong>UTF-8 charset.</strong><br/>
+The project was tested only on Linux Manjaro Xfce 5.10.42-1-MANJARO x86-64.
 ```
 git clone https://github.com/karaname/typp.git && cd typp
 autoreconf -iv && ./configure && sudo make install

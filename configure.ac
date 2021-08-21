@@ -12,8 +12,8 @@ AM_INIT_AUTOMAKE([subdir-objects])
 
 # Checks for libraries.
 PKG_CHECK_MODULES([ncursesw], [ncursesw])
-PKG_CHECK_MODULES([form], [form])
-PKG_CHECK_MODULES([menu], [menu])
+PKG_CHECK_MODULES([formw], [formw])
+PKG_CHECK_MODULES([menuw], [menuw])
 AC_CHECK_LIB([ncurses], [initscr])
 AC_CHECK_LIB([m], [round])
 

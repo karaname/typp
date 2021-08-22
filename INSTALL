@@ -1,19 +1,32 @@
---- Requires Installation:
-* ncursesw (development library)
-* pkg-config
-* automake
-* autoconf
-* binutils
-* ncurses
-* glibc
-* make
-* gcc
+--- Needed Packages
+
+name    |    version    |    description    |
+---------------------------------------------
+gcc           10.2           GNU C compiler
+libc          2.31           GNU C Library
+make          4.3-3          GNU make utility to maintain groups of programs
+autoconf      2.69           A GNU tool for automatically configuring source code
+automake      1.16           A GNU tool for automatically creating Makefiles
+binutils      2.35           A set of programs to assemble and manipulate binary and object files
+pkg-config    0.29           Package compiler and linker metadata toolkit
+ncurses       6.2            Curses emulation library
+ncursesw      6.2            Curses emulation library (wide character support)
+                             For example on Debian: apt-get install libncursesw5-dev
+---------------------------------------------
+
 
 --- Make sure charset is set to UTF-8
-run the 'locale' command
+For correct display characters recommended use UTF-8 charset.
+Run the 'locale' command
+
 
 --- Spell
 autoreconf -iv && ./configure && sudo make install
+
+
+--- Launch and show your best result
+typp
+
 
 --- File Structure
 /usr/local/bin/typp
@@ -21,6 +34,3 @@ autoreconf -iv && ./configure && sudo make install
 /usr/local/share/typp/eng.typp
 /usr/local/share/typp/rus.typp
 /usr/local/man/man6/typp.6
-
---- Platform
-The project was tested only on Linux Manjaro Xfce 5.10.42-1-MANJARO x86_64

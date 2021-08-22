@@ -61,19 +61,19 @@ void rating_info()
   BOX_WBORDER_ZERO(tuiv.rating_win);
   mvwaddstr(tuiv.rating_win, 0, (80 - strlen("Help")) / 2, "Help");
   mvwaddstr(tuiv.rating_win, 1, 1, "WPM rating:");
-  mvwaddstr(tuiv.rating_win, 2, 2, "less 24 (slow)");
-  mvwaddstr(tuiv.rating_win, 3, 2, "more or equal 24 and less 32 (fine)");
-  mvwaddstr(tuiv.rating_win, 4, 2, "more or equal 32 and less 52 (middle)");
-  mvwaddstr(tuiv.rating_win, 5, 2, "more or equal 52 and less 70 (well)");
-  mvwaddstr(tuiv.rating_win, 6, 2, "more or equal 70 and less or equal 80 (pro)");
-  mvwaddstr(tuiv.rating_win, 7, 2, "more 80 (best)");
+  mvwaddstr(tuiv.rating_win, 2, 2, "(slow) less 24");
+  mvwaddstr(tuiv.rating_win, 3, 2, "(fine) more or equal 24 and less 32");
+  mvwaddstr(tuiv.rating_win, 4, 2, "(middle) more or equal 32 and less 52");
+  mvwaddstr(tuiv.rating_win, 5, 2, "(well) more or equal 52 and less 70");
+  mvwaddstr(tuiv.rating_win, 6, 2, "(pro) more or equal 70 and less or equal 80");
+  mvwaddstr(tuiv.rating_win, 7, 2, "(best) more 80");
   mvwaddstr(tuiv.rating_win, 10, 1, "CPM rating:");
-  mvwaddstr(tuiv.rating_win, 11, 2, "less 120 (slow)");
-  mvwaddstr(tuiv.rating_win, 12, 2, "more or equal 120 and less 160 (fine)");
-  mvwaddstr(tuiv.rating_win, 13, 2, "more or equal 160 and less 260 (middle)");
-  mvwaddstr(tuiv.rating_win, 14, 2, "more or equal 260 and less 350 (well)");
-  mvwaddstr(tuiv.rating_win, 15, 2, "more or equal 350 and less or equal 400 (pro)");
-  mvwaddstr(tuiv.rating_win, 16, 2, "more 400 (best)");
+  mvwaddstr(tuiv.rating_win, 11, 2, "(slow) less 120");
+  mvwaddstr(tuiv.rating_win, 12, 2, "(fine) more or equal 120 and less 160");
+  mvwaddstr(tuiv.rating_win, 13, 2, "(middle) more or equal 160 and less 260");
+  mvwaddstr(tuiv.rating_win, 14, 2, "(well) more or equal 260 and less 350");
+  mvwaddstr(tuiv.rating_win, 15, 2, "(pro) more or equal 350 and less or equal 400");
+  mvwaddstr(tuiv.rating_win, 16, 2, "(best) more 400");
   wrefresh(tuiv.rating_win);
   FOOTER_MSGS;
 
@@ -495,7 +495,7 @@ display_result(int errcount, int scount, int sscount,
 
   /* speed count - wpm or cpm / get user rating */
   if (lang_highlight) {
-    npm = round(((scount / 5) - errcount) / t);
+    npm = round((scount / 5 - errcount) / t);
     rating = get_wpm_rating(npm);
   } else {
     npm = round(scount / t);

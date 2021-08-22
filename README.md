@@ -1,19 +1,80 @@
-## typp
+# typp
 This software is intended for the practice of typing text from the keyboard.<br/>
-From the available texts <strong>English</strong> and <strong>Russian</strong>.<br/>
-For correct display <strong>Russian</strong> characters recommended use <strong>UTF-8 charset.</strong><br/>
-The project was tested only on Linux Manjaro Xfce 5.10.42-1-MANJARO x86-64.
+You can compete with other users through the pivot table.<br/>
+From the available random texts: <strong>English</strong> / <strong>Russian</strong>.<br/>
+
+## Table of Contents
+- [Cloning and check needed packages](#cloning-and-check-needed-packages)
+- [TUI Overview](#tui-overview)
+- [Result more details](#result-more-details)
+- [Share your result](#share-your-result)
+- [Advice](#advice)
+
+## Cloning and check needed packages
 ```
-git clone https://github.com/karaname/typp.git && cd typp
+git clone https://github.com/karaname/typp.git
+cd typp && cat INSTALL
+```
+Install packages from list and then:
+```
 autoreconf -iv && ./configure && sudo make install
 ```
+Disable terminal shortcuts<br/>
+Terminal -> Edit -> Preferences -> Advanced<br/>
+Check the boxes:
+* Disable menu shortcut key (F10 by default)
+* Disable help window shortcut key (F1 by default)
 
-## Overview
+## TUI Overview
 ![](images/overview.gif)
 
-## Result Example
+After typed text the result will appear (below example):<br/>
 ![](images/result.png)
 
+## Result more details
+### WPM
+```
+Rating Tag  |  Range
+---------------------------------------------
+slow        |  less 24
+file        |  more or equal 24 and less 32
+middle      |  more or equal 32 and less 52
+well        |  more or equal 52 and less 70
+pro         |  more or equal 70 and less or equal 80
+best        |  more 80
+```
+Formula:
+```
+(characters_count / 5 - errors_count) / time_in_minute
+```
+
+### CPM
+```
+Rating Tag  |  Range
+---------------------------------------------
+slow        |  less 120
+fine        |  more or equal 120 and less 160
+middle      |  more or equal 160 and less 260
+well        |  more or equal 260 and less 350
+pro         |  more or equal 350 and less or equal 400
+best        |  more 400
+```
+Formula:
+```
+characters_count / time_in_minute
+```
+
+### Time
+The countdown time starts from the first entered character.
+
+## Share your result
+Enter your nickname into the form after entering text.<br/>
+Your result will be sent to the server (source code here - https://github.com/karaname/typp-server).<br/>
+Through the main menu it will be possible to go to the pivot table of common results for viewing.<br/>
+The top five results (users) are immediately visible :wink:<br/>
+![](images/wpm_table.png)
+
 ## Advice
+Why my rating to low?<br/>
 Use <strong>touch typing method</strong> to achieve great results!
 ![](images/keyboard.png)

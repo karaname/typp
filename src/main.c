@@ -676,7 +676,7 @@ display_text(wchar_t *main_text, size_t lent, WINDOW *text_win)
 size_t
 get_text_and_len(wchar_t *main_text, char *name, int offsets[])
 {
-  char fpath[30] = "/usr/local/share/typp/";
+  char fpath[32] = "/usr/local/share/typp/";
   FILE *stream;
   size_t n;
   wint_t c;

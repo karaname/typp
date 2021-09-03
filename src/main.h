@@ -4,6 +4,12 @@ int lang_highlight = 0, npm_highlight = 0;
 size_t newlcount;
 
 struct tui_elements {
+  const char *main_title;
+  const char *sel_lang_title;
+  const char *sel_unit_title;
+  const char *note_msg;
+  const char *nick_msg;
+  const char *menu_footer_msg;
   WINDOW *main_title_win;
   WINDOW *result_win;
   WINDOW *text_win;
@@ -14,12 +20,6 @@ struct tui_elements {
   ITEM **items;
   FIELD *field[2];
   FORM *form;
-  const char *main_title;
-  const char *sel_lang_title;
-  const char *sel_unit_title;
-  const char *note_msg;
-  const char *nick_msg;
-  const char *menu_footer_msg;
 } tuiv;
 
 #define COLOR_BOLD(N) (COLOR_PAIR(N) | A_BOLD)

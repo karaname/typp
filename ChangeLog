@@ -1,3 +1,7 @@
+v1.3.22
+  * signal check SIG_ERR
+  * correcting error_wrap function
+
 v1.3.21
   * fix buffer overflow detected
 

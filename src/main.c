@@ -40,9 +40,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <arpa/inet.h>
 #include "main.h"
 
-void endwin_error_wrap(const char *s, int line)
+void error_wrap(const char *s, int line)
 {
-  endwin();
   fprintf(stderr, "%s: %s:%d: %s\n", program_name, __FILE__, line, s);
   exit(EXIT_FAILURE);
 }
@@ -50,8 +49,10 @@ void endwin_error_wrap(const char *s, int line)
 void *malloc_wrap(size_t num, size_t size)
 {
   void *p;
-  if ((p = malloc(num * size)) == NULL)
-    endwin_error_wrap("Cannot allocate memory", __LINE__);
+  if ((p = malloc(num * size)) == NULL) {
+    endwin();
+    error_wrap("Cannot allocate memory", __LINE__);
+  }
   return p;
 }
 
@@ -131,8 +132,10 @@ int connect_to_server()
   int sock;
 
   /* create client socket */
-  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    endwin_error_wrap("socket() returned negative value", __LINE__);
+  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    endwin();
+    error_wrap("socket() returned negative value", __LINE__);
+  }
   memset(&servaddr, 0, sizeof(servaddr));
 
   /* assign IP, PORT */
@@ -270,11 +273,15 @@ void get_results_from_server(char *upper_npm)
     return;
   }
 
-  if (send(client_sock, cpm_or_wpm, strlen(cpm_or_wpm), 0) != 3)
-    endwin_error_wrap("send() condition did not pass", __LINE__);
+  if (send(client_sock, cpm_or_wpm, strlen(cpm_or_wpm), 0) != 3) {
+    endwin();
+    error_wrap("send() condition did not pass", __LINE__);
+  }
 
-  if ((len_res = recv(client_sock, all_results, sizeof(all_results), 0)) == -1)
-    endwin_error_wrap("recv() returned negative value", __LINE__);
+  if ((len_res = recv(client_sock, all_results, sizeof(all_results), 0)) == -1) {
+    endwin();
+    error_wrap("recv() returned negative value", __LINE__);
+  }
   close(client_sock);
 
   /* format results, indents */
@@ -320,8 +327,10 @@ send_res_to_server(int sock, int ln, const char *nickname,
 {
   char user_val[64];
   sprintf(user_val, "%d %s %d %d %.2d:%.2d\n", ln, nickname, npm, err, m, s);
-  if (send(sock, user_val, sizeof(user_val), 0) == -1)
-    endwin_error_wrap("send() returned negative value", __LINE__);
+  if (send(sock, user_val, sizeof(user_val), 0) == -1) {
+    endwin();
+    error_wrap("send() returned negative value", __LINE__);
+  }
   close(sock);
 }
 
@@ -502,8 +511,10 @@ display_result(int errcount, int scount, int sscount,
     rating = get_cpm_rating(npm);
   }
 
-  if (rating == NULL)
-    endwin_error_wrap("Pointer 'rating' equal NULL", __LINE__);
+  if (rating == NULL) {
+    endwin();
+    error_wrap("Pointer 'rating' equal NULL", __LINE__);
+  }
 
   tuiv.result_win = newwin(20, 35, 1, 1);
   BOX_WBORDER_ZERO(tuiv.result_win);
@@ -682,8 +693,10 @@ get_text_and_len(wchar_t *main_text, char *name, int offsets[])
   wint_t c;
 
   strcat(fpath, name);
-  if ((stream = fopen(fpath, "r")) == NULL)
-    endwin_error_wrap(strerror(errno), __LINE__);
+  if ((stream = fopen(fpath, "r")) == NULL) {
+    endwin();
+    error_wrap(strerror(errno), __LINE__);
+  }
 
   srand(time(NULL));
   fseek(stream, offsets[rand() % 11], SEEK_SET);
@@ -756,11 +769,14 @@ please re-enter the program\n", program_name);
 int main(void)
 {
   setlocale(LC_ALL, "");
-  signal(SIGWINCH, resize_term_handler);
+
+  if (signal(SIGWINCH, resize_term_handler) == SIG_ERR)
+    error_wrap("It is impossible to process the signal SIGWINCH", __LINE__);
 
   /* ignore SIGINT signal (CTRL + C)
      the program has a way out key 'F10 Quit' */
-  signal(SIGINT, SIG_IGN);
+  if (signal(SIGINT, SIG_IGN) == SIG_ERR)
+    error_wrap("It is impossible to process the signal SIGINT", __LINE__);
 
   if (!initscr()) {
     error(0, 0, "Error initialising ncurses");
@@ -773,8 +789,10 @@ int main(void)
     keypad(stdscr, TRUE);
 
     /* check 80 columns by 24 rows terminal size */
-    if (LINES < 24 || COLS < 80)
-      endwin_error_wrap("Please, use terminal size not less 80x24", __LINE__);
+    if (LINES < 24 || COLS < 80) {
+      endwin();
+      error_wrap("Please, use terminal size not less 80x24", __LINE__);
+    }
 
     if (has_colors()) {
       start_color();
